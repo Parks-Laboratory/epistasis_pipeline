@@ -6,7 +6,7 @@
 2. copy **fixpheno.sh** file into the **epistasis/data/** directory  
 3. run the command `sh fixpheno.sh PREFIX` where PREFIX is the actual prefix for the data set  
 4. move to the **epistasis/** directory  
-5. run the command `python fastlmm_pipeline.py PREFIX --covar` (with additional arguments as necessary)  
+5. run the command `python epistasis_pipeline.py PREFIX --covar` (with additional arguments as necessary)  
 	Note: for a detailed list of additional arguments, run the command `python epistasis_pipeline.py -h`  
 6. wait while pipeline runs  
 7. transfer the directory **results/** back to the server  

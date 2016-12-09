@@ -56,8 +56,8 @@ def make_snp_combos(dataLoc, tfile_prefix):
     snps.pop(0)
 
   # set up the looping params for generating the range of snps  
-  first = range(1, len(snps), 10000)
-  last = range(1, len(snps), 10000)
+  first = range(1, len(snps), 7500)
+  last = range(1, len(snps), 7500)
   last.pop(0)
   last.append(len(snps))
 

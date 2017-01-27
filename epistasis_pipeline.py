@@ -50,22 +50,24 @@ def timestamp():
 def make_snp_combos(dataLoc, tfile_prefix):
 
   # extract snps from the tped file
-  subprocess.call("awk {'print $2'} %(dataLoc)s/%(tfile_prefix)s.tped > %(dataLoc)s/snps.txt" % locals(), shell=True) 
+  	# runs command in shell to extract second column (rsIDs) from tped
+	# saves rsIDs to snps.txt
+  subprocess.call("awk {'print $2'} %(dataLoc)s/%(tfile_prefix)s.tped > %(dataLoc)s/snps.txt" % locals(), shell=True)
   snps = [x.strip() for x in open('%(dataLoc)s/snps.txt' % locals()).readlines()]
   if snps[0] == '':
     snps.pop(0)
 
-  # set up the looping params for generating the range of snps  
+  # set up the looping params for generating the range of snps
   first = range(1, len(snps), 7500)
   last = range(1, len(snps), 7500)
   last.pop(0)
   last.append(len(snps))
 
-  # create range of snps
+  # create ranges of snps
   x = ['%s,%s' % (first[i], last[i]-1) for i in range(len(first))]
   # x = ['%s-%s' % (snps[ first[i]], snps[last[i]-1]) for i in range(len(first))]
 
-  # pairwise combos of snp ranges 
+  # pairwise combos of snp ranges
   all_combos = open('%(dataLoc)s/snp_combos_%(tfile_prefix)s.txt' % locals(), 'w')
   for i in x:
     for j in x:
@@ -115,7 +117,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
     # run your script
     python epistasis_wrapper.py %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s %(dataset)s $1 >& epistasis_wrapper.py.output.$1
     ''').replace('\t*', '')
-    
+
 
     # set memory and max threads
     if memory is None:
@@ -136,7 +138,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
     if condition:
         condition = condition[0]
 
-    params.update({'root': root, 
+    params.update({'root': root,
                    'dataLoc': dataLoc,
                    'dataset': dataset,
                    'job_output': job_output,
@@ -151,7 +153,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
                    'feature_selection':['', '--feature-selection'][featsel],
                    'exclude':['', '--exclude'][exclude],
                    'condition': ['', '--condition %s' % condition][condition is not None],
-                   'use_memory': local_memory, 
+                   'use_memory': local_memory,
                    'n_snp_combo': len( open('%s/snp_combos_%s.txt' % (dataLoc, dataset)).readlines() )})
 
     maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
@@ -181,8 +183,8 @@ if __name__ == '__main__':
     #parser.set_usage('''%(prog)s [options] [dataset1] [dataset2] ... (runs all datasets if unspecified)
     #PLINK-formatted genotype (*.tped, *.tfam) and alternate phenotype (*.pheno.txt) files should be placed in ''' + dataLoc)
     parser.add_argument('dataset', metavar='dataset', nargs=1, type=str, help='dataset(s) to process')
-    
-    
+
+
     parser.add_argument('-l', '--list', dest='list_dataset', help='lists datasets to process, does not do processing',
                         default=False, action='store_true')
     parser.add_argument('-d', '--datadir', dest='datadir', help='specifies folder to search for raw data',
@@ -218,13 +220,13 @@ if __name__ == '__main__':
     list_data = args.list_dataset
     covFile = args.covFile
     memory = args.memory
-    numeric = args.numeric 
+    numeric = args.numeric
     species = args.species.lower()
     maxthreads = args.maxthreads
     featsel = args.featsel
     exclude = args.exclude
     debug = args.debug
-    tasks = args.tasks 
+    tasks = args.tasks
     condition = args.condition
 
     if debug:
@@ -246,10 +248,8 @@ if __name__ == '__main__':
 
     # make snp combos for epistasis
     make_snp_combos(dataLoc, dataset)
-    
+
     # run on cluster
     process(params, covFile, memory, tasks, species=species, featsel=featsel, exclude=exclude, condition=condition)
 
     log.close()
-
-

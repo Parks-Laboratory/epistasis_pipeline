@@ -28,8 +28,7 @@ job_output_root = os.path.join(root, 'results')
 
 # script locations
 prog_path = os.path.join(root, 'scripts')
-epistasis_script = os.path.join(prog_path, 'epistasis_wrapper.py')
-merge_script = os.path.join(prog_path, 'merge_epistasis_output.py')
+epistasis_script = os.path.join(prog_path, 'epistasis_node.py')
 
 class Tee(object):
 	def __init__(self, filename):
@@ -44,38 +43,6 @@ class Tee(object):
 
 def timestamp():
 	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%I-%S')
-
-
-# write out snp combos into a file
-def make_snp_combos(dataLoc, tfile_prefix):
-
-  # extract snps from the tped file
-  	# runs command in shell to extract second column (rsIDs) from tped
-	# saves rsIDs to snps.txt
-  subprocess.call("awk {'print $2'} %(dataLoc)s/%(tfile_prefix)s.tped > %(dataLoc)s/snps.txt" % locals(), shell=True)
-  snps = [x.strip() for x in open('%(dataLoc)s/snps.txt' % locals()).readlines()]
-  if snps[0] == '':
-	snps.pop(0)
-
-  # set up the looping params for generating the range of snps
-  first = range(1, len(snps), 7500)
-  last = range(1, len(snps), 7500)
-  last.pop(0)
-  last.append(len(snps))
-
-  # create ranges of snps
-  x = ['%s,%s' % (first[i], last[i]-1) for i in range(len(first))]
-  # x = ['%s-%s' % (snps[ first[i]], snps[last[i]-1]) for i in range(len(first))]
-
-  # pairwise combos of snp ranges
-  all_combos = open('%(dataLoc)s/snp_combos_%(tfile_prefix)s.txt' % locals(), 'w')
-  for i in x:
-	for j in x:
-	  if i != j:
-		s = '%(i)s;%(j)s' % locals()
-		all_combos.write('%s\n' % s)
-
-  all_combos.close()
 
 def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
 
@@ -98,12 +65,17 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	when_to_transfer_output = ON_EXIT
 	transfer_input_files = %(root)s/epistasis_%(dataset)s.sh,%(prog_path)s/,%(dataLoc)s/
 
-	request_cpus = 24
+	request_cpus = 1
 	request_memory = %(use_memory)sMB
-	request_disk = 48GB
+	request_disk = 4GB
 
-	queue %(n_snp_combo)s
+	# requirements = (Target.PoolName =!= "CHTC")
+	# +wantGlidein = true
+	# +wantFlocking = true
+
+	queue %(num_group_comparisons)s
 	''').replace('\t*', '')
+
 
 	exec_template = textwrap.dedent(
 	'''#!/bin/bash
@@ -115,7 +87,12 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	export PATH=$(pwd)/python/bin:$PATH
 
 	# run your script
-	python epistasis_wrapper.py %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s %(dataset)s $1 >& epistasis_wrapper.py.output.$1
+	python epistasis_node.py %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s %(dataset)s %(num_snps_per_group)s $1 >& epistasis_node.py.output.$1
+
+	# if script failed, make empty file named with job's process number
+	if [ ! $? == 0 ]; then
+		> $1
+	fi
 	''').replace('\t*', '')
 
 
@@ -138,6 +115,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	if condition:
 		condition = condition[0]
 
+	check_prefixes(dataloc, dataset)
+
 	params.update({'root': root,
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,
@@ -154,7 +133,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 				   'exclude':['', '--exclude'][exclude],
 				   'condition': ['', '--condition %s' % condition][condition is not None],
 				   'use_memory': local_memory,
-				   'n_snp_combo': len( open('%s/snp_combos_%s.txt' % (dataLoc, dataset)).readlines() )})
+				   'num_snps_per_group': num_snps_per_group
+				   'num_group_comparisons': num_group_comparisons(num_snps_per_group)})
 
 	maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
@@ -175,15 +155,43 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
 
+def num_group_comparisons(num_snps_per_group):
+	num_snps = 0
+	with open(os.path.join(dataloc, dataset+'_FILTERED.bim')) as file:
+		for line in file.readlines():
+			line = line.split()
+			if len(line) > 1 and 'rs' in line[1]:
+				num_snps += 1
+
+	num_groups = math.ceil(num_snps/num_snps_per_group)
+	num_comparisons = num_groups * (num_groups + 1) / 2
+
+
+def check_prefixes(dataloc, dataset):
+	'''
+	Looks in directory specified by dataloc, and ensures there are 2 sets of
+	binary files. Specifically, the following must exist:
+	*.FULL.bed, *.FULL.bim, *.FULL.fam
+	*.FILTERED.bed, *.FILTERED.bim, *.FILTERED.fam
+	where * is the same for all 6 files
+	'''
+	bin_files = [x for x in os.listdir(dataloc) if os.path.splitext(x)[1] in ['.bed', '.bim', '.fam']]
+	full_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+'.FULL']
+	filtered_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+'.FILTERED']
+
+	# check that prefixes match up and that each extension is included exactly twice
+	if not len(full_prefixes) == len(exts) or not len(filtered_prefixes) == len(exts):
+		sys.exit('ERROR: two sets of .bed/.bim/.fam files could not be found in "{}" with the prefix "{}"'.format(dataloc, dataset))
+
+
 
 if __name__ == '__main__':
 	import argparse
-	parser = argparse.ArgumentParser(description='''Runs FaST-LMM on datasets found in specified location (looks in %s by default). Each dataset should have PLINK-formatted genotype (.tped, .tfam) and alternate phenotype (*.pheno.txt) files.  Optional covariate files should be named with the same prefix as the other files and end in .covar.txt .
+	parser = argparse.ArgumentParser(description='''Runs FaST-LMM on datasets found in specified location (looks in %s by default). Each dataset should have PLINK-formatted genotype (*.tped, *.tfam) and alternate phenotype (*.pheno.txt) files.  Optional covariate files should be named with the same prefix as the other files and end in .covar.txt .
 ''' % dataLoc)
 	#parser.set_usage('''%(prog)s [options] [dataset1] [dataset2] ... (runs all datasets if unspecified)
 	#PLINK-formatted genotype (*.tped, *.tfam) and alternate phenotype (*.pheno.txt) files should be placed in ''' + dataLoc)
 	parser.add_argument('dataset', metavar='dataset', nargs=1, type=str, help='dataset(s) to process')
-
 
 	parser.add_argument('-l', '--list', dest='list_dataset', help='lists datasets to process, does not do processing',
 						default=False, action='store_true')
@@ -242,12 +250,8 @@ if __name__ == '__main__':
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
 	# initiate params
-	params = {}
-	params['covar'] = '%s.covar.txt' % dataset
-	params['covar'] = None
-
-	# make snp combos for epistasis
-	make_snp_combos(dataLoc, dataset)
+	num_snps_per_group = 1000
+	params = {	'covar':covFile }
 
 	# run on cluster
 	process(params, covFile, memory, tasks, species=species, featsel=featsel, exclude=exclude, condition=condition)

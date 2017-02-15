@@ -18,3 +18,8 @@ NOTE:
 
 * Sometimes the "condor_q" command fails and quits the program unexpectedly. In this case, rerun the pipeline  
 * Ensure that files scripts/fastlmmc, scripts/plink, fixpheno.sh are executable (green). If not run the command `chmod +x FILE_NAME`
+
+REQUIREMENTS:
+
+* CHTC account
+* SQUID directory

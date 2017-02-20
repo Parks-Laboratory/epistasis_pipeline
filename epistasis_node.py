@@ -26,7 +26,7 @@ species_chroms = {'human':23, 'mouse':20}
 
 
 # run fastlmmc
-def run_fastlmmc(dataset, output_dir, process_id, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None, groupSize):
+def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
 
 	# commands from fastlmmc:
 	# maxthreads
@@ -51,14 +51,14 @@ def run_fastlmmc(dataset, output_dir, process_id, covFile=None, species='mouse',
 	n = len(filtered_snp_reader.sid)
 
 	# case checking
-	if(groupsize > n):
+	if(group_size > n):
 		print("trying to group more than the number of existing snps:\nprogram ended!")
 		exit(1)
-	if(groupsize == 0):
+	if(group_size == 0):
 		print("grouping size is 0:\nprogram ended!")
 		exit(1)
-	groupNum = (n//groupsize)
-	if (n % groupsize !=0):
+	groupNum = (n//group_size)
+	if (n % group_size !=0):
 		groupNum += 1
 	#print(groupNum)
 	if(groupNum < 2):
@@ -75,7 +75,10 @@ def run_fastlmmc(dataset, output_dir, process_id, covFile=None, species='mouse',
 		print("job number exceeds the total number of jobs that epstasis could do")
 		exit(1)
 
-	list_1_idx_start, list_1_idx_end, list_2_idx_start, list_2_idx_end = 0
+	list_1_idx_start = 0
+	list_1_idx_end = 0
+	list_2_idx_start = 0
+	list_2_idx_end = 0
 	single_homo = False;
 
 	if(process_id < hetero_num):
@@ -84,14 +87,14 @@ def run_fastlmmc(dataset, output_dir, process_id, covFile=None, species='mouse',
 			th -= 1
 			base += 1
 
-		list_1_idx_start = groupSize*base
-		list_1_idx_end = list_1_idx_start + groupSize
+		list_1_idx_start = group_size*base
+		list_1_idx_end = list_1_idx_start + group_size
 
-		list_2_idx_start = groupSize*(base + rest)
+		list_2_idx_start = group_size*(base + rest)
 		if((base + rest) == (groupNum -1)):
 			 list_2_idx_end = n - 1;
 		else:
-			list_2_idx_end = list_2_idx_start + groupSize
+			list_2_idx_end = list_2_idx_start + group_size
 		#print('(' + str(base) + ',' + str(base + rest) + ')')
 
 	# homogenous computing: same group
@@ -99,7 +102,7 @@ def run_fastlmmc(dataset, output_dir, process_id, covFile=None, species='mouse',
 		offset = process_id - hetero_num
 
 		offset *= 2
-		list_1_idx_start = groupSize * offset
+		list_1_idx_start = group_size * offset
 
 		if(offset > groupNum):
 			# last homo with only one group
@@ -107,33 +110,34 @@ def run_fastlmmc(dataset, output_dir, process_id, covFile=None, species='mouse',
 			single_homo = True
 
 		else:
-			list_1_idx_end = list_1_idx_start + groupsize
+			list_1_idx_end = list_1_idx_start + group_size
 			list_2_idx_start = list_1_idx_end
-			list_2_idx_end = min(list_2_idx_start + groupsize, n)
+			list_2_idx_end = min(list_2_idx_start + group_size, n)
 
 		#print('(' + str(offset) + ',' + str(offset) + ')' + '(' + str(offset + 1) + ',' +\
 		#str(offset + 1) + ')')
 
 
 	# epistasis on all snps
+	df = None
 	if covFile:
 		if (process_id < hetero_num):
-			epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+			df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 		else:
 			if(single_homo):
-				epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 			else:
-				epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
-				epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 	else:
 		if (process_id < hetero_num):
-			epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+			df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 		else:
 			if(single_homo):
-				epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 			else:
-				epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
-				epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
 	# format outputs
 	final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
@@ -150,6 +154,10 @@ if __name__ == '__main__':
 	from argparse import ArgumentParser
 	parser = ArgumentParser()
 	#parser.set_usage('''%prog [options] dataset''')
+	parser.add_argument('dataset', help='dataset to run', action='store')
+	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store')
+	parser.add_argument('process_id', help= 'phenotype index', action='store')
+	
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default=None, action='store')
 	parser.add_argument('-c', '--covariate_file', dest='covFile', help='use covariate file',
@@ -164,9 +172,6 @@ if __name__ == '__main__':
 						default=None, action='store', nargs=1)
 	parser.add_argument('--debug', dest='debug', help='log debugging output',
 						default=False, action='store_true')
-	parser.add_argument('dataset', help='dataset to run', action='store')
-	parser.add_argument('groupSize', help='number of snps in a group', action = 'store')
-	parser.add_argument('process_id', help= 'phenotype index', action='store')
 
 	args = parser.parse_args()
 
@@ -178,7 +183,7 @@ if __name__ == '__main__':
 	condition = args.condition
 	debug = args.debug
 	dataset = args.dataset
-	groupSize = ars.dataset
+	group_size = args.group_size
 
 	output_dir = root
 	process_id = int( args.process_id )
@@ -187,4 +192,4 @@ if __name__ == '__main__':
 		print('args:')
 		pprint(args)
 
-	run_fastlmmc(dataset, output_dir, process_id, covFile, species, maxthreads, featsel=featsel, exclude=exclude, condition=condition, groupSize = groupSize)
+	run_fastlmmc(dataset, output_dir, process_id, group_size, covFile, species, maxthreads, featsel=featsel, exclude=exclude, condition=condition)

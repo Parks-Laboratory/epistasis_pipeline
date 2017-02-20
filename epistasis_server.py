@@ -3,7 +3,7 @@
 """
 Runs Plink, Generates Submit Files and Processes Inputs/Outputs to Cluster
 """
-
+from __future__ import division
 import sys
 import os
 import stat
@@ -29,6 +29,10 @@ job_output_root = os.path.join(root, 'results')
 # script locations
 prog_path = os.path.join(root, 'scripts')
 epistasis_script = os.path.join(prog_path, 'epistasis_node.py')
+
+# filename formats
+FULL_DATASET = '.FULL'
+FILTERED_DATASET = '.FILTERED'
 
 class Tee(object):
 	def __init__(self, filename):
@@ -63,7 +67,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 	should_transfer_files = YES
 	when_to_transfer_output = ON_EXIT
-	transfer_input_files = %(root)s/epistasis_%(dataset)s.sh,%(prog_path)s/,%(dataLoc)s/
+	transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/cgottsacker/epistasis.tar.gz, %(root)s/epistasis_node.py
 
 	request_cpus = 1
 	request_memory = %(use_memory)sMB
@@ -73,12 +77,15 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	# +wantGlidein = true
 	# +wantFlocking = true
 
-	queue %(num_group_comparisons)s
+	queue %(num_jobs)s
 	''').replace('\t*', '')
 
 
 	exec_template = textwrap.dedent(
 	'''#!/bin/bash
+
+	# untar your files sent along by SQUID
+	tar -xzvf epistasis.tar.gz
 
 	# untar your Python installation
 	tar -xzvf python.tar.gz
@@ -87,12 +94,15 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	export PATH=$(pwd)/python/bin:$PATH
 
 	# run your script
-	python epistasis_node.py %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s %(dataset)s %(num_snps_per_group)s $1 >& epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& epistasis_node.py.output.$1
 
 	# if script failed, make empty file named with job's process number
 	if [ ! $? == 0 ]; then
 		> $1
 	fi
+
+	rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python		# TODO restore
+	# rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt _condor_stderr _condor_stdout python tmp *.py.output.
 	''').replace('\t*', '')
 
 
@@ -115,7 +125,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	if condition:
 		condition = condition[0]
 
-	check_prefixes(dataloc, dataset)
+	# check_prefixes(dataLoc, dataset)
 
 	params.update({'root': root,
 				   'dataLoc': dataLoc,
@@ -133,8 +143,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 				   'exclude':['', '--exclude'][exclude],
 				   'condition': ['', '--condition %s' % condition][condition is not None],
 				   'use_memory': local_memory,
-				   'num_snps_per_group': num_snps_per_group
-				   'num_group_comparisons': num_group_comparisons(num_snps_per_group)})
+				   'num_snps_per_group': num_snps_per_group,
+				   'num_jobs': num_jobs(num_snps_per_group)})
 
 	maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
@@ -155,17 +165,20 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
 
-def num_group_comparisons(num_snps_per_group):
-	num_snps = 0
-	with open(os.path.join(dataloc, dataset+'_FILTERED.bim')) as file:
-		for line in file.readlines():
-			line = line.split()
-			if len(line) > 1 and 'rs' in line[1]:
-				num_snps += 1
+def num_jobs(num_snps_per_group):
+	num_snps = 1600
 
-	num_groups = math.ceil(num_snps/num_snps_per_group)
+	# num_snps = 0
+	# with open(os.path.join(dataloc, dataset+FILTERED_DATASET+'.bim')) as file:
+	# 	for line in file.readlines():
+	# 		line = line.split()
+	# 		if len(line) > 1 and 'rs' in line[1]:
+	# 			num_snps += 1
+
+	num_groups = ceil(num_snps/num_snps_per_group)
 	num_comparisons = num_groups * (num_groups + 1) / 2
 
+	return int(num_comparisons)
 
 def check_prefixes(dataloc, dataset):
 	'''
@@ -176,8 +189,8 @@ def check_prefixes(dataloc, dataset):
 	where * is the same for all 6 files
 	'''
 	bin_files = [x for x in os.listdir(dataloc) if os.path.splitext(x)[1] in ['.bed', '.bim', '.fam']]
-	full_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+'.FULL']
-	filtered_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+'.FILTERED']
+	full_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+FULL_DATASET]
+	filtered_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+FILTERED_DATASET]
 
 	# check that prefixes match up and that each extension is included exactly twice
 	if not len(full_prefixes) == len(exts) or not len(filtered_prefixes) == len(exts):
@@ -250,7 +263,7 @@ if __name__ == '__main__':
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
 	# initiate params
-	num_snps_per_group = 1000
+	num_snps_per_group = 97
 	params = {	'covar':covFile }
 
 	# run on cluster

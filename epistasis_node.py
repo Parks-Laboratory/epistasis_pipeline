@@ -37,8 +37,6 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	#	 condition = '-SnpId1 %s' % condition[0]
 	# else:
 	#	 condition = ''
-
-
 	bfile = dataset
 	filtered_snp_reader = Bed('%s.FILTERED' % bfile)
 	full_snp_reader = Bed('%s.FULL' % bfile)
@@ -56,14 +54,14 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 		exit(1)
 	if(group_size == 0):
 		print("grouping size is 0:\nprogram ended!")
-		exit(1)
+		exit(2)
 	groupNum = (n//group_size)
 	if (n % group_size !=0):
 		groupNum += 1
-	#print(groupNum)
+	#print("group_num: " + str(groupNum))
 	if(groupNum < 2):
 		print("group number should be at least two, please decrease the size of snps in each group")
-		exit(1)
+		exit(3)
 	th = groupNum - 1
 	rest = process_id + 1
 	base = 0
@@ -80,7 +78,6 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	list_2_idx_start = 0
 	list_2_idx_end = 0
 	single_homo = False;
-
 	if(process_id < hetero_num):
 		while(rest > th):
 			rest -= th
@@ -103,10 +100,11 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		offset *= 2
 		list_1_idx_start = group_size * offset
-
-		if(offset > groupNum):
+		
+		if(offset == groupNum - 1):
 			# last homo with only one group
-			list_1_idx_end = n - 1;
+			#list_1_idx_start = 
+			list_1_idx_end = n;
 			single_homo = True
 
 		else:

@@ -184,7 +184,7 @@ def num_jobs(num_snps_per_group):
 	num_groups = ceil(num_snps/num_snps_per_group)
 	num_comparisons = num_groups * (num_groups + 1) / 2
 
-	return 1	# TODO remove
+	# return 1	# TODO remove
 	return int(num_comparisons)
 
 def check_prefixes(dataloc, dataset):

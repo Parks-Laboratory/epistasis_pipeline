@@ -67,7 +67,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 	should_transfer_files = YES
 	when_to_transfer_output = ON_EXIT
-	transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/cgottsacker/epistasis.tar.gz, %(root)s/epistasis_node.py
+	transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/cgottsacker/%(squid_zip)s
 
 	request_cpus = 1
 	request_memory = %(use_memory)sMB
@@ -85,10 +85,10 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	'''#!/bin/bash
 
 	# untar your files sent along by SQUID
-	tar -xzvf epistasis.tar.gz
+	tar -xzvf %(squid_zip)s
 
 	# untar your Python installation
-	tar -xzvf python.tar.gz
+	tar -xzvf %(python_installation)s
 
 	# make sure the script will use your Python installation
 	export PATH=$(pwd)/python/bin:$PATH
@@ -101,8 +101,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 		> $1
 	fi
 
-	rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python		# TODO restore
-	# rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt _condor_stderr _condor_stdout python tmp *.py.output.
+	rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
+	# rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python *.py.output. 	# TODO restore
 	''').replace('\t*', '')
 
 
@@ -126,14 +126,19 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 		condition = condition[0]
 
 	# check_prefixes(dataLoc, dataset)
-
+	squid_archive = 'epistasis.tar'
 	params.update({'root': root,
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,
+				   'num_snps_per_group': num_snps_per_group,
+				   'num_jobs': num_jobs(num_snps_per_group),
 				   'job_output': job_output,
 				   'condor_output': condor_output,
 				   'covFile': ['', '-c %s' % params['covar']][covar and params['covar'] is not None],
 				   'epistasis_script': epistasis_script,
+				   'squid_archive': squid_archive,
+				   'squid_zip': squid_archive + '.gz',
+				   'python_installation': 'python.tar.gz',
 				   'debug': ['', '--debug'][debug],
 				   'prog_path':prog_path,
 				   'timestamp':datetime.ctime(datetime.now()),
@@ -142,9 +147,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 				   'feature_selection':['', '--feature-selection'][featsel],
 				   'exclude':['', '--exclude'][exclude],
 				   'condition': ['', '--condition %s' % condition][condition is not None],
-				   'use_memory': local_memory,
-				   'num_snps_per_group': num_snps_per_group,
-				   'num_jobs': num_jobs(num_snps_per_group)})
+				   'use_memory': local_memory})
 
 	maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
@@ -157,6 +160,11 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	exec_file.close()
 
 	subprocess.call('chmod +x epistasis_%(dataset)s.sh' % params, shell = True)
+	subprocess.call('tar -cf %(squid_archive)s -C %(dataLoc)s/ .' % params, shell = True)
+	subprocess.call('tar -f %(squid_archive)s -C %(prog_path)s --append .' % params, shell = True)
+	subprocess.call('gzip < %(squid_archive)s > %(squid_zip)s' % params, shell = True)
+	if(subprocess.call('cp %(squid_zip)s /squid/$USER' % params, shell = True)):
+		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 
 	# submit jobs to condor
 	condor_cluster = subprocess.Popen(['condor_submit', 'epistasis_%(dataset)s.sub' % params], stdout=subprocess.PIPE).communicate()[0]
@@ -166,18 +174,17 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 
 def num_jobs(num_snps_per_group):
-	num_snps = 1600
-
-	# num_snps = 0
-	# with open(os.path.join(dataloc, dataset+FILTERED_DATASET+'.bim')) as file:
-	# 	for line in file.readlines():
-	# 		line = line.split()
-	# 		if len(line) > 1 and 'rs' in line[1]:
-	# 			num_snps += 1
+	num_snps = 0
+	with open(os.path.join(dataLoc, dataset+FILTERED_DATASET+'.bim')) as file:
+		for line in file.readlines():
+			line = line.split()
+			if len(line) > 1 and 'rs' in line[1]:
+				num_snps += 1
 
 	num_groups = ceil(num_snps/num_snps_per_group)
 	num_comparisons = num_groups * (num_groups + 1) / 2
 
+	return 1	# TODO remove
 	return int(num_comparisons)
 
 def check_prefixes(dataloc, dataset):

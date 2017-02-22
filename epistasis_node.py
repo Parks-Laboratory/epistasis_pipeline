@@ -36,8 +36,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	# if condition:
 	#	 condition = '-SnpId1 %s' % condition[0]
 	# else:
-	#	 condition = ''
-
+	#	 condition = '
 
 	bfile = dataset
 	filtered_snp_reader = Bed('%s.FILTERED' % bfile)
@@ -56,14 +55,14 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 		exit(1)
 	if(group_size == 0):
 		print("grouping size is 0:\nprogram ended!")
-		exit(1)
+		exit(2)
 	groupNum = (n//group_size)
 	if (n % group_size !=0):
 		groupNum += 1
-	#print(groupNum)
+	#print("group_num: " + str(groupNum))
 	if(groupNum < 2):
 		print("group number should be at least two, please decrease the size of snps in each group")
-		exit(1)
+		exit(3)
 	th = groupNum - 1
 	rest = process_id + 1
 	base = 0
@@ -103,10 +102,11 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		offset *= 2
 		list_1_idx_start = group_size * offset
-
-		if(offset > groupNum):
+		
+		if(offset == groupNum - 1):
 			# last homo with only one group
-			list_1_idx_end = n - 1;
+			#list_1_idx_start = 
+			list_1_idx_end = n;
 			single_homo = True
 
 		else:
@@ -120,6 +120,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 	# epistasis on all snps
 	df = None
+	df2 = None
 	if covFile:
 		if (process_id < hetero_num):
 			df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
@@ -128,7 +129,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 			else:
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
-				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 	else:
 		if (process_id < hetero_num):
 			df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
@@ -137,7 +138,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 			else:
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
-				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
 	# format outputs
 	final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
@@ -147,8 +148,11 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	# output to csv
 	v.update(locals())
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
-
-
+	if(df2 != None):
+		final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
+		final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
+		v.update(locals())
+		final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, mode = 'a', sep='\t', index=False)
 
 if __name__ == '__main__':
 	from argparse import ArgumentParser

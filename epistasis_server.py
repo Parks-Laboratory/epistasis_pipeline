@@ -94,15 +94,14 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	export PATH=$(pwd)/python/bin:$PATH
 
 	# run your script
-	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& $1
 
-	# if script failed, make empty file named with job's process number
-	if [ ! $? == 0 ]; then
-		> $1
+	# Keep job output only if job FAILS (for debugging/so it can be re-run)
+	if [ $? == 0 ]; then
+		rm $1
 	fi
 
 	rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
-	# rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python *.py.output. 	# TODO restore
 	''').replace('\t*', '')
 
 

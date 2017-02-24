@@ -160,7 +160,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 	# give script permission to execute
 	subprocess.call('chmod +x epistasis_%(dataset)s.sh' % params, shell = True)
-	
+
 	# add large files to a tar archive file, which will be sent over by SQUID
 	subprocess.call('tar -cf %(squid_archive)s -C %(dataLoc)s/ .' % params, shell = True)
 	subprocess.call('tar -f %(squid_archive)s -C %(prog_path)s --append .' % params, shell = True)
@@ -186,7 +186,7 @@ def num_jobs(num_snps_per_group):
 				num_snps += 1
 
 	num_groups = ceil(num_snps/num_snps_per_group)
-	num_comparisons = num_groups * (num_groups + 1) / 2
+	num_comparisons = num_groups * (num_groups + 1) / 2 + ceil(num_groups/2)
 
 	# return 1	# TODO remove
 	return int(num_comparisons)

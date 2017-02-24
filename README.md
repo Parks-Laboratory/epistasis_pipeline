@@ -23,3 +23,7 @@ REQUIREMENTS:
 
 * CHTC account
 * SQUID directory
+
+## Future work
+* Modify epistasis_server.py to continuously monitor for failed jobs and to
+re-submit them if appropriate

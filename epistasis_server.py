@@ -158,10 +158,15 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	exec_file.write( exec_template % params )
 	exec_file.close()
 
+	# give script permission to execute
 	subprocess.call('chmod +x epistasis_%(dataset)s.sh' % params, shell = True)
+	
+	# add large files to a tar archive file, which will be sent over by SQUID
 	subprocess.call('tar -cf %(squid_archive)s -C %(dataLoc)s/ .' % params, shell = True)
 	subprocess.call('tar -f %(squid_archive)s -C %(prog_path)s --append .' % params, shell = True)
+	# compress archive file
 	subprocess.call('gzip < %(squid_archive)s > %(squid_zip)s' % params, shell = True)
+	# place compressed archive file in the user's SQUID directory
 	if(subprocess.call('cp %(squid_zip)s /squid/$USER' % params, shell = True)):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 

@@ -186,10 +186,14 @@ def num_jobs(num_snps_per_group):
 				num_snps += 1
 
 	num_groups = ceil(num_snps/num_snps_per_group)
-	num_comparisons = num_groups * (num_groups + 1) / 2 + ceil(num_groups/2)
+	# for all groups A, B: num jobs comparing A to B, but ignoring the redundant jobs comparing B to A
+	num_AB_jobs = num_groups * (num_groups - 1) / 2
+	# if comparison A to A and B to B has not been done
+	num_AA_jobs = ceil(num_groups/2)
+	num_jobs = num_AB_jobs + num_AA_jobs
 
 	# return 1	# TODO remove
-	return int(num_comparisons)
+	return int(num_jobs)
 
 def check_prefixes(dataloc, dataset):
 	'''

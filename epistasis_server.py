@@ -6,6 +6,7 @@ Runs Plink, Generates Submit Files and Processes Inputs/Outputs to Cluster
 from __future__ import division
 import sys
 import os
+import pwd
 import stat
 import re
 import subprocess
@@ -67,7 +68,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 	should_transfer_files = YES
 	when_to_transfer_output = ON_EXIT
-	transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/cgottsacker/%(squid_zip)s
+	transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/%(username)s/%(squid_zip)s
 
 	request_cpus = 1
 	request_memory = %(use_memory)sMB
@@ -137,6 +138,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 				   'epistasis_script': epistasis_script,
 				   'squid_archive': squid_archive,
 				   'squid_zip': squid_archive + '.gz',
+				   'username': pwd.getpwuid(os.getuid()).pw_name,
 				   'python_installation': 'python.tar.gz',
 				   'debug': ['', '--debug'][debug],
 				   'prog_path':prog_path,
@@ -167,7 +169,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	# compress archive file
 	subprocess.call('gzip < %(squid_archive)s > %(squid_zip)s' % params, shell = True)
 	# place compressed archive file in the user's SQUID directory
-	if(subprocess.call('cp %(squid_zip)s /squid/$USER' % params, shell = True)):
+	if(subprocess.call('cp %(squid_zip)s /squid/%(username)s' % params, shell = True)):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 
 	# submit jobs to condor
@@ -188,7 +190,7 @@ def num_jobs(num_snps_per_group):
 	num_groups = ceil(num_snps/num_snps_per_group)
 	# for all groups A, B: num jobs comparing A to B, but ignoring the redundant jobs comparing B to A
 	num_AB_jobs = num_groups * (num_groups - 1) / 2
-	# if comparison A to A and B to B has not been done
+	# for each comparison A to A, B to B that have been done, 2 such comparisons are done per job, if possible
 	num_AA_jobs = ceil(num_groups/2)
 	num_jobs = num_AB_jobs + num_AA_jobs
 

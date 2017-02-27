@@ -95,11 +95,12 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	export PATH=$(pwd)/python/bin:$PATH
 
 	# run your script
-	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& $1
+	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& epistasis_node.py.output.$1
 
-	# Keep job output only if job FAILS (for debugging/so it can be re-run)
+	# Keep job output only if job FAILS (for debugging/so it can be re-run),
+	# otherwise, delete the output file
 	if [ $? == 0 ]; then
-		rm $1
+		rm epistasis_node.py.output.$1
 	fi
 
 	rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
@@ -188,13 +189,15 @@ def num_jobs(num_snps_per_group):
 				num_snps += 1
 
 	num_groups = ceil(num_snps/num_snps_per_group)
-	# for all groups A, B: num jobs comparing A to B, but ignoring the redundant jobs comparing B to A
+	# for all groups A, B: num jobs comparing A to B, but ignoring the redundant
+	# jobs comparing B to A
 	num_AB_jobs = num_groups * (num_groups - 1) / 2
-	# for each comparison A to A, B to B that have been done, 2 such comparisons are done per job, if possible
+	# for each comparison A to A, B to B that have not been done,
+	# 2 such comparisons are done per job
+	# (if num_groups is odd, then one job will only compare A to A, and not B to B)
 	num_AA_jobs = ceil(num_groups/2)
 	num_jobs = num_AB_jobs + num_AA_jobs
 
-	# return 1	# TODO remove
 	return int(num_jobs)
 
 def check_prefixes(dataloc, dataset):

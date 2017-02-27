@@ -91,7 +91,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		list_2_idx_start = group_size*(base + rest)
 		if((base + rest) == (groupNum -1)):
-			 list_2_idx_end = n - 1;
+			 list_2_idx_end = n;
 		else:
 			list_2_idx_end = list_2_idx_start + group_size
 		#print('(' + str(base) + ',' + str(base + rest) + ')')

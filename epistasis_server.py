@@ -47,7 +47,7 @@ class Tee(object):
 		self.logfile.close()
 
 def timestamp():
-	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%I-%S')
+	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
 
 def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
 

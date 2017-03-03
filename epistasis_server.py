@@ -75,8 +75,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	request_disk = 4GB
 
 	# requirements = (Target.PoolName =!= "CHTC")
-	# +wantGlidein = true
-	# +wantFlocking = true
+	+wantGlidein = true
+	+wantFlocking = true
 
 	queue %(num_jobs)s
 	''').replace('\t*', '')

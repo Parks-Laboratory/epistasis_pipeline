@@ -23,7 +23,7 @@ root = os.path.split(os.path.realpath(sys.argv[0]))[0]
 species_chroms = {'human':24, 'mouse':21}
 # ignore Y chromosome
 species_chroms = {'human':23, 'mouse':20}
-
+p_value_threshold = 0.005
 
 # run fastlmmc
 def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
@@ -102,10 +102,10 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		offset *= 2
 		list_1_idx_start = group_size * offset
-		
+
 		if(offset == groupNum - 1):
 			# last homo with only one group
-			#list_1_idx_start = 
+			#list_1_idx_start =
 			list_1_idx_end = n;
 			single_homo = True
 
@@ -145,12 +145,11 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	# format outputs
 	final = df.loc[:, columns]
 	final.columns = ['SNP1', 'SNP2', 'PValue']
-	# final = final[final['P'] <= 0.00001]
-
+	final = final[final['P'] <= p_value_threshold]
 	# output to csv
 	v.update(locals())
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
-	if(df2 != None):
+	if(df2 is not None):
 		final = df2.loc[:, columns]
 		final.columns = ['SNP1','SNP2','PValue']
 		v.update(locals())
@@ -163,7 +162,7 @@ if __name__ == '__main__':
 	parser.add_argument('dataset', help='dataset to run', action='store')
 	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store')
 	parser.add_argument('process_id', help= 'phenotype index', action='store')
-	
+
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default=None, action='store')
 	parser.add_argument('-c', '--covariate_file', dest='covFile', help='use covariate file',

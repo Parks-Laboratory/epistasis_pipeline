@@ -78,8 +78,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	periodic_release = (CurrentTime - EnteredCurrentStatus > 600)
 	
 	# requirements = (Target.PoolName =!= "CHTC")
-	# +wantGlidein = true
-	# +wantFlocking = true
+	+wantGlidein = true
+	+wantFlocking = true
 
 	queue %(num_jobs)s
 	''').replace('\t*', '')

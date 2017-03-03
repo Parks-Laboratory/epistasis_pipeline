@@ -47,7 +47,7 @@ class Tee(object):
 		self.logfile.close()
 
 def timestamp():
-	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%I-%S')
+	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
 
 def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
 
@@ -74,6 +74,9 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	request_memory = %(use_memory)sMB
 	request_disk = 4GB
 
+	# set the interval for releasing the job if failed
+	periodic_release = (CurrentTime - EnteredCurrentStatus > 600)
+	
 	# requirements = (Target.PoolName =!= "CHTC")
 	+wantGlidein = true
 	+wantFlocking = true

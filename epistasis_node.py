@@ -140,17 +140,19 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
+	columns = ['SNP0', 'SNP1', 'PValue']
+	
 	# format outputs
-	final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
-	final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
+	final = df.loc[:, columns]
+	final.columns = ['SNP1', 'SNP2', 'PValue']
 	# final = final[final['P'] <= 0.00001]
 
 	# output to csv
 	v.update(locals())
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
 	if(df2 != None):
-		final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
-		final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
+		final = df2.loc[:, columns]
+		final.columns = ['SNP1','SNP2','PValue']
 		v.update(locals())
 		final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, mode = 'a', sep='\t', index=False)
 

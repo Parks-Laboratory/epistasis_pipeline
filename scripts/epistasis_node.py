@@ -79,7 +79,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	list_2_idx_start = 0
 	list_2_idx_end = 0
 	single_homo = False;
-
+	#print("hetero_num: %s, homo_num: %s, maxjobnum: %s" %(hetero_num, homo_num,maxjobnum))
 	if(process_id < hetero_num):
 		while(rest > th):
 			rest -= th
@@ -91,7 +91,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		list_2_idx_start = group_size*(base + rest)
 		if((base + rest) == (groupNum -1)):
-			 list_2_idx_end = n;
+			 list_2_idx_end = n - 1;
 		else:
 			list_2_idx_end = list_2_idx_start + group_size
 		#print('(' + str(base) + ',' + str(base + rest) + ')')
@@ -140,18 +140,18 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
+	columns = ['SNP0', 'SNP1', 'PValue']
+	
 	# format outputs
-	final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
-	final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
+	final = df.loc[:, columns]
+	final.columns = ['SNP1', 'SNP2', 'PValue']
 	final = final[final['P'] <= p_value_threshold]
-
 	# output to csv
 	v.update(locals())
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
 	if(df2 is not None):
-		final = df2.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
-		final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
-		final = final[final['P'] <= p_value_threshold]
+		final = df2.loc[:, columns]
+		final.columns = ['SNP1','SNP2','PValue']
 		v.update(locals())
 		final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, mode = 'a', sep='\t', index=False)
 

@@ -23,7 +23,7 @@ root = os.path.split(os.path.realpath(sys.argv[0]))[0]
 species_chroms = {'human':24, 'mouse':21}
 # ignore Y chromosome
 species_chroms = {'human':23, 'mouse':20}
-
+p_value_threshold = 0.005
 
 # run fastlmmc
 def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
@@ -91,7 +91,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		list_2_idx_start = group_size*(base + rest)
 		if((base + rest) == (groupNum -1)):
-			 list_2_idx_end = n - 1;
+			 list_2_idx_end = n;
 		else:
 			list_2_idx_end = list_2_idx_start + group_size
 		#print('(' + str(base) + ',' + str(base + rest) + ')')
@@ -102,10 +102,10 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 		offset *= 2
 		list_1_idx_start = group_size * offset
-		
+
 		if(offset == groupNum - 1):
 			# last homo with only one group
-			#list_1_idx_start = 
+			#list_1_idx_start =
 			list_1_idx_end = n;
 			single_homo = True
 
@@ -143,14 +143,15 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	# format outputs
 	final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
 	final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
-	# final = final[final['P'] <= 0.00001]
+	final = final[final['P'] <= p_value_threshold]
 
 	# output to csv
 	v.update(locals())
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
-	if(df2 != None):
-		final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
+	if(df2 is not None):
+		final = df2.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
 		final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
+		final = final[final['P'] <= p_value_threshold]
 		v.update(locals())
 		final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, mode = 'a', sep='\t', index=False)
 
@@ -161,7 +162,7 @@ if __name__ == '__main__':
 	parser.add_argument('dataset', help='dataset to run', action='store')
 	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store')
 	parser.add_argument('process_id', help= 'phenotype index', action='store')
-	
+
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default=None, action='store')
 	parser.add_argument('-c', '--covariate_file', dest='covFile', help='use covariate file',

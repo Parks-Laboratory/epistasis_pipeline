@@ -72,14 +72,14 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 	request_cpus = 1
 	request_memory = %(use_memory)sMB
-	request_disk = 4GB
+	request_disk = 2GB
 
 	# set the interval for releasing the job if failed
 	periodic_release = (CurrentTime - EnteredCurrentStatus > 600)
-	
+
 	# requirements = (Target.PoolName =!= "CHTC")
-	+wantGlidein = true
-	+wantFlocking = true
+	# +wantGlidein = true
+	# +wantFlocking = true
 
 	queue %(num_jobs)s
 	''').replace('\t*', '')
@@ -112,7 +112,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 
 	# set memory and max threads
 	if memory is None:
-		local_memory = 8000
+		local_memory = 2000
 
 	# generate output files
 	condor_output = os.path.join(condor_output_root, dataset)
@@ -286,7 +286,7 @@ if __name__ == '__main__':
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
 	# initiate params
-	num_snps_per_group = 97
+	num_snps_per_group = 1600
 	params = {	'covar':covFile }
 
 	# run on cluster

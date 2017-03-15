@@ -27,3 +27,6 @@ REQUIREMENTS:
 ## Future work
 * Modify epistasis_server.py to continuously monitor for failed jobs and to
 re-submit them if appropriate
+	* add periodic_release code
+	* use HoldReasonCode?
+* Monitor for completed jobs, delete their associated .err, .out files if appropriate to reduce space used on submit server

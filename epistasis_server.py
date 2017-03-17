@@ -78,8 +78,8 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	periodic_release = (CurrentTime - EnteredCurrentStatus > 600)
 
 	# requirements = (Target.PoolName =!= "CHTC")
-	# +wantGlidein = true
-	# +wantFlocking = true
+	+wantGlidein = true
+	+wantFlocking = true
 
 	queue %(num_jobs)s
 	''').replace('\t*', '')
@@ -94,8 +94,14 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	# untar your Python installation
 	tar -xzvf %(python_installation)s
 
+	# untar ATLAS linear algebra library
+	tar -xzvf %(atlas_installation)s
+
 	# make sure the script will use your Python installation
 	export PATH=$(pwd)/python/bin:$PATH
+
+	# make sure script can find ATLAS library
+	export LD_LIBRARY_PATH=$(pwd)/atlas
 
 	# run your script
 	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& epistasis_node.py.output.$1
@@ -144,6 +150,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 				   'squid_zip': squid_archive + '.gz',
 				   'username': pwd.getpwuid(os.getuid()).pw_name,
 				   'python_installation': 'python.tar.gz',
+				   'atlas_installation': 'atlas.tar.gz',
 				   'debug': ['', '--debug'][debug],
 				   'prog_path':prog_path,
 				   'timestamp':datetime.ctime(datetime.now()),
@@ -286,7 +293,7 @@ if __name__ == '__main__':
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
 	# initiate params
-	num_snps_per_group = 1600
+	num_snps_per_group = 1200
 	params = {	'covar':covFile }
 
 	# run on cluster

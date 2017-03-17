@@ -23,7 +23,9 @@ root = os.path.split(os.path.realpath(sys.argv[0]))[0]
 species_chroms = {'human':24, 'mouse':21}
 # ignore Y chromosome
 species_chroms = {'human':23, 'mouse':20}
-p_value_threshold = 0.005
+p_value_threshold = 0.0005
+
+final_columns = ['SNP1','SNP2','PValue']
 
 # run fastlmmc
 def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
@@ -140,19 +142,19 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
-	columns = ['SNP0', 'SNP1', 'PValue']
-	
-	# format outputs
-	final = df.loc[:, columns]
-	final.columns = ['SNP1', 'SNP2', 'PValue']
-	final = final[final['P'] <= p_value_threshold]
-	# output to csv
+	def format_results(df, final_columns, threshold):
+		# format outputs
+		final = df.loc[:, final_columns]
+		final.columns = final_columns
+		final = final[final['PValue'] <= threshold]
+		return final
+
 	v.update(locals())
+	# output to csv
+	final = format_results(df, final_columns, p_value_threshold)
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
 	if(df2 is not None):
-		final = df2.loc[:, columns]
-		final.columns = ['SNP1','SNP2','PValue']
-		v.update(locals())
+		final = format_results(df2, final_columns, p_value_threshold)
 		final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, mode = 'a', sep='\t', index=False)
 
 if __name__ == '__main__':

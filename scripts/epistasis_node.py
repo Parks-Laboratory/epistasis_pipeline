@@ -25,7 +25,7 @@ species_chroms = {'human':24, 'mouse':21}
 species_chroms = {'human':23, 'mouse':20}
 p_value_threshold = 0.0005
 
-final_columns = ['SNP1','SNP2','PValue']
+final_columns = ['SNP0','SNP1','PValue']
 
 # run fastlmmc
 def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
@@ -143,9 +143,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
 	def format_results(df, final_columns, threshold):
-		# format outputs
 		final = df.loc[:, final_columns]
-		final.columns = final_columns
 		final = final[final['PValue'] <= threshold]
 		return final
 

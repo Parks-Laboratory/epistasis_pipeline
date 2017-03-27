@@ -88,6 +88,9 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	exec_template = textwrap.dedent(
 	'''#!/bin/bash
 
+	# if script fails before getting to python, make sure this file exists
+	echo > epistasis_node.py.output.$1
+
 	# untar your files sent along by SQUID
 	tar -xzvf %(squid_zip)s
 
@@ -104,7 +107,7 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 
 	# run your script
-	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >& epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >>& epistasis_node.py.output.$1
 
 	# Keep job output only if job FAILS (for debugging/so it can be re-run),
 	# otherwise, delete the output file

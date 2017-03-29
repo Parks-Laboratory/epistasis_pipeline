@@ -49,7 +49,7 @@ class Tee(object):
 def timestamp():
 	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
 
-def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
+def process(params):
 
 	os.chdir(root)
 
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default='mouse', action='store', choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
 	parser.add_argument('-m', '--memory', dest='memory', help='amount of RAM (in megabytes) requested per job',
-						default=None, action='store', type=int)
+						default=2000, action='store', type=int)
 	parser.add_argument('--maxthreads', dest='maxthreads', help='maximum # of threads to use',
 						default=1, action='store', choices=range(1, 17), type=int)
 	parser.add_argument('-f', '--feature-selection', dest='featsel', help='perform feature selection',

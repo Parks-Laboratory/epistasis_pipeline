@@ -245,7 +245,7 @@ if __name__ == '__main__':
 	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+', help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
 	parser.add_argument('--condition', dest='condition', help='condition on SNP {snp_id}',
 						action='store', nargs=1)
-	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store', default=1200)
+	parser.add_argument('-g', '--group_size', type=int, help='number of snps in a group', action = 'store', default=1200)
 
 	args = parser.parse_args()
 
@@ -264,6 +264,7 @@ if __name__ == '__main__':
 	debug = args.debug
 	tasks = args.tasks
 	condition = args.condition
+	group_size = args.group_size
 
 	if debug:
 		log = Tee('epistasis_pipeline-%s.log' % timestamp())

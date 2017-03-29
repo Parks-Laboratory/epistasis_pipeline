@@ -192,6 +192,23 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
+def writeSubmissionFiles(params):
+	pass
+
+def writeSubmissionFile(params, offset):
+	pass
+
+def writeShellScript(params):
+	pass
+
+def makeOutputDirs(params):
+	pass
+
+def packageSQUIDfiles(params):
+	pass
+
+def submitJobs(params):
+	pass
 
 def num_jobs(num_snps_per_group):
 	num_snps = 0
@@ -202,16 +219,17 @@ def num_jobs(num_snps_per_group):
 				num_snps += 1
 
 	num_groups = ceil(num_snps/num_snps_per_group)
+
 	# for all groups A, B: num jobs comparing A to B, but ignoring the redundant
 	# jobs comparing B to A
 	num_AB_jobs = num_groups * (num_groups - 1) / 2
+
 	# for each comparison A to A, B to B that have not been done,
 	# 2 such comparisons are done per job
 	# (if num_groups is odd, then one job will only compare A to A, and not B to B)
 	num_AA_jobs = ceil(num_groups/2)
-	num_jobs = num_AB_jobs + num_AA_jobs
 
-	return int(num_jobs)
+	return int(num_AB_jobs + num_AA_jobs)
 
 def check_prefixes(dataloc, dataset):
 	'''
@@ -226,7 +244,7 @@ def check_prefixes(dataloc, dataset):
 	filtered_prefixes = [x for x in bin_files if os.path.splitext(x)[0] == dataset+FILTERED_DATASET]
 
 	# check that prefixes match up and that each extension is included exactly twice
-	if not len(full_prefixes) == len(exts) or not len(filtered_prefixes) == len(exts):
+	if not len(full_prefixes) == 3 or not len(filtered_prefixes) == 3:
 		sys.exit('ERROR: two sets of .bed/.bim/.fam files could not be found in "{}" with the prefix "{}"'.format(dataloc, dataset))
 
 

@@ -186,29 +186,29 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	if(subprocess.call('cp %(squid_zip)s /squid/%(username)s' % params, shell = True)):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 
+	submit_jobs(params)
+
+def write_submission_files(params):
+	pass
+
+def write_submission_file(params, offset):
+	pass
+
+def write_shell_script(params):
+	pass
+
+def make_output_dirs(params):
+	pass
+
+def package_SQUID_files(params):
+	pass
+
+def submit_jobs(params):
 	# submit jobs to condor
 	condor_cluster = subprocess.Popen(['condor_submit', 'epistasis_%(dataset)s.sub' % params], stdout=subprocess.PIPE).communicate()[0]
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
-
-def writeSubmissionFiles(params):
-	pass
-
-def writeSubmissionFile(params, offset):
-	pass
-
-def writeShellScript(params):
-	pass
-
-def makeOutputDirs(params):
-	pass
-
-def packageSQUIDfiles(params):
-	pass
-
-def submitJobs(params):
-	pass
 
 def num_jobs(num_snps_per_group):
 	num_snps = 0
@@ -282,6 +282,7 @@ if __name__ == '__main__':
 	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+', help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
 	parser.add_argument('--condition', dest='condition', help='condition on SNP {snp_id}',
 						action='store', nargs=1)
+	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store')
 
 	args = parser.parse_args()
 

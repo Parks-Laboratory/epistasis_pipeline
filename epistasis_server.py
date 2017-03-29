@@ -278,15 +278,20 @@ if __name__ == '__main__':
 
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
+	params = {}
+
 	# initiate params
-	params = {	'covar':covFile }
+	covFile = '%s.covar.txt' % dataset
+	if covar and os.path.isfile(covFile):
+		params.update({ 'covFile': '-c %s' % covFile})
+	elif covar:
+		params.update({ 'covFile': ''})
+		log.send_output('Specified --covar but no covariate file exists; ignored')
+
 
 	# set memory and max threads
 	if memory is None:
 		local_memory = 2000
-
-	if covar and params['covar'] is None:
-		log.send_output('Specified --covar but no covariate file exists; ignored')
 
 	if condition:
 		condition = condition[0]
@@ -300,7 +305,6 @@ if __name__ == '__main__':
 				   'num_jobs': num_jobs(group_size),
 				   'job_output': job_output,
 				   'condor_output': condor_output,
-				   'covFile': ['', '-c %s' % params['covar']][covar and params['covar'] is not None],
 				   'epistasis_script': epistasis_script,
 				   'squid_archive': squid_archive,
 				   'squid_zip': squid_archive + '.gz',
@@ -317,9 +321,9 @@ if __name__ == '__main__':
 				   'condition': ['', '--condition %s' % condition][condition is not None],
 				   'use_memory': local_memory})
 
-	maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
+	# maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
 	# run on cluster
-	process(params, covFile, memory, tasks, species=species, featsel=featsel, exclude=exclude, condition=condition)
+	process(params)
 
 	log.close()

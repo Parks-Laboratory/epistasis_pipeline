@@ -107,7 +107,7 @@ def process(params):
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 
 	# run your script
-	python epistasis_node.py %(dataset)s %(num_snps_per_group)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >>& epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >>& epistasis_node.py.output.$1
 
 	# Keep job output only if job FAILS (for debugging/so it can be re-run),
 	# otherwise, delete the output file
@@ -173,7 +173,7 @@ def submit_jobs(params):
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
-def num_jobs(num_snps_per_group):
+def num_jobs(group_size):
 	num_snps = 0
 	with open(os.path.join(dataLoc, dataset+FILTERED_DATASET+'.bim')) as file:
 		for line in file.readlines():
@@ -181,7 +181,7 @@ def num_jobs(num_snps_per_group):
 			if len(line) > 1 and 'rs' in line[1]:
 				num_snps += 1
 
-	num_groups = ceil(num_snps/num_snps_per_group)
+	num_groups = ceil(num_snps/group_size)
 
 	# for all groups A, B: num jobs comparing A to B, but ignoring the redundant
 	# jobs comparing B to A
@@ -245,7 +245,7 @@ if __name__ == '__main__':
 	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+', help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
 	parser.add_argument('--condition', dest='condition', help='condition on SNP {snp_id}',
 						action='store', nargs=1)
-	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store')
+	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store', default=1200)
 
 	args = parser.parse_args()
 
@@ -278,7 +278,6 @@ if __name__ == '__main__':
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
 	# initiate params
-	num_snps_per_group = 1200
 	params = {	'covar':covFile }
 
 	# set memory and max threads
@@ -296,8 +295,8 @@ if __name__ == '__main__':
 	params.update({'root': root,
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,
-				   'num_snps_per_group': num_snps_per_group,
-				   'num_jobs': num_jobs(num_snps_per_group),
+				   'group_size': group_size,
+				   'num_jobs': num_jobs(group_size),
 				   'job_output': job_output,
 				   'condor_output': condor_output,
 				   'covFile': ['', '-c %s' % params['covar']][covar and params['covar'] is not None],

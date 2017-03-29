@@ -119,9 +119,6 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	''').replace('\t*', '')
 
 
-	# set memory and max threads
-	if memory is None:
-		local_memory = 2000
 
 	# generate output files
 	condor_output = os.path.join(condor_output_root, dataset)
@@ -131,40 +128,6 @@ def process(params, covar=False, memory=1024, tasks=None, species='mouse', maxth
 	job_output = os.path.join(job_output_root, dataset)
 	if not os.path.exists(job_output):
 		os.makedirs(job_output)
-
-	if covar and params['covar'] is None:
-		log.send_output('Specified --covar but no covariate file exists; ignored')
-
-	if condition:
-		condition = condition[0]
-
-	# check_prefixes(dataLoc, dataset)
-	squid_archive = 'epistasis.tar'
-	params.update({'root': root,
-				   'dataLoc': dataLoc,
-				   'dataset': dataset,
-				   'num_snps_per_group': num_snps_per_group,
-				   'num_jobs': num_jobs(num_snps_per_group),
-				   'job_output': job_output,
-				   'condor_output': condor_output,
-				   'covFile': ['', '-c %s' % params['covar']][covar and params['covar'] is not None],
-				   'epistasis_script': epistasis_script,
-				   'squid_archive': squid_archive,
-				   'squid_zip': squid_archive + '.gz',
-				   'username': pwd.getpwuid(os.getuid()).pw_name,
-				   'python_installation': 'python.tar.gz',
-				   'atlas_installation': 'atlas.tar.gz',
-				   'debug': ['', '--debug'][debug],
-				   'prog_path':prog_path,
-				   'timestamp':datetime.ctime(datetime.now()),
-				   'species': '-s %s' % species,
-				   'maxthreads':'--maxthreads %s' % maxthreads,
-				   'feature_selection':['', '--feature-selection'][featsel],
-				   'exclude':['', '--exclude'][exclude],
-				   'condition': ['', '--condition %s' % condition][condition is not None],
-				   'use_memory': local_memory})
-
-	maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
 	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
@@ -317,6 +280,44 @@ if __name__ == '__main__':
 	# initiate params
 	num_snps_per_group = 1200
 	params = {	'covar':covFile }
+
+		# set memory and max threads
+		if memory is None:
+			local_memory = 2000
+
+		if covar and params['covar'] is None:
+			log.send_output('Specified --covar but no covariate file exists; ignored')
+
+		if condition:
+			condition = condition[0]
+
+		# check_prefixes(dataLoc, dataset)
+		squid_archive = 'epistasis.tar'
+		params.update({'root': root,
+					   'dataLoc': dataLoc,
+					   'dataset': dataset,
+					   'num_snps_per_group': num_snps_per_group,
+					   'num_jobs': num_jobs(num_snps_per_group),
+					   'job_output': job_output,
+					   'condor_output': condor_output,
+					   'covFile': ['', '-c %s' % params['covar']][covar and params['covar'] is not None],
+					   'epistasis_script': epistasis_script,
+					   'squid_archive': squid_archive,
+					   'squid_zip': squid_archive + '.gz',
+					   'username': pwd.getpwuid(os.getuid()).pw_name,
+					   'python_installation': 'python.tar.gz',
+					   'atlas_installation': 'atlas.tar.gz',
+					   'debug': ['', '--debug'][debug],
+					   'prog_path':prog_path,
+					   'timestamp':datetime.ctime(datetime.now()),
+					   'species': '-s %s' % species,
+					   'maxthreads':'--maxthreads %s' % maxthreads,
+					   'feature_selection':['', '--feature-selection'][featsel],
+					   'exclude':['', '--exclude'][exclude],
+					   'condition': ['', '--condition %s' % condition][condition is not None],
+					   'use_memory': local_memory})
+
+		maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
 	# run on cluster
 	process(params, covFile, memory, tasks, species=species, featsel=featsel, exclude=exclude, condition=condition)

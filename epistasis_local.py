@@ -5,7 +5,8 @@ Arguments:	(use argparse)
 	missing, default = 0.1
 		pass to PLINK via --geno
 	input file
-		columns: Mouse ID, Strain, Sex, Covar, trait1, trait2, ...
+		columns: Strain, Sex, trait
+		columns: Strain, Sex, Covar, trait1, trait2, ... (alternative)
 			if Covar only contains NA, or missing, then don't create covar file
 		(use filename as prefix for all generated files)
 
@@ -19,11 +20,12 @@ Outputs:
 Goals of script:
 0) make *.tped, *.tfam
  	call make_plink_inputs.py
-1) call fix_pheno	... replaces missing values with -9 (PLINK uses -9 as missing value)
+1) make *pheno.txt
+2) call fix_pheno	... replaces missing values with -9 (by convention)
 	see fix_pheno
-2) check fids/iids ...compares *.tfam with *.pheno.txt, makes sure 1st column same for both
+3) check fids/iids ...compares *.tfam with *.pheno.txt, makes sure 1st column same for both
 	see check_fids_iids()
-2) Filter snps, make beds (populate_available)	...
+4) Filter snps, make beds (populate_available)	...
 	see populate_available()
 '''
 
@@ -99,7 +101,7 @@ def populate_available(dataset, species, snp_index):
 				print 'No phenotypes found in %s.pheno.txt!' % dataset
 
 
-# function to make sure that fids and iids match across files (used to be in epistasis_pipeline.py)
+# function to make sure that fids and iids match across files (used to be in epistasis_wrapper.py)
 def check_fids_iids(prefix):
 	def get_fids_iids(fn, skip=0):
 		f = open(fn)
@@ -145,12 +147,12 @@ while (("$#")); do
             	head -1 $1.pheno.txt > tmp.pheno.txt;
             	tail -n+2 $1.pheno.txt | sed -r 's/ /\./g;s/\//\./g;s/(NULL|NA|#NUM!|-Inf|Inf)/-9/g' >> tmp.pheno.txt;
             	mv -f tmp.pheno.txt $1.pheno.txt;
-        fi;
-        if [ -e $1.covar.txt ]; then
-            	echo Fixing $1.covar.txt;
-            	sed -i 's/ /\./g;s/\//\./g;s/(NULL|NA|#NUM!|-Inf|Inf)/-9/g' $1.covar.txt;
-        fi;
-        shift;
+    fi;
+    if [ -e $1.covar.txt ]; then
+        	echo Fixing $1.covar.txt;
+        	sed -i 's/ /\./g;s/\//\./g;s/(NULL|NA|#NUM!|-Inf|Inf)/-9/g' $1.covar.txt;
+    fi;
+    shift;
 done'''
 
 

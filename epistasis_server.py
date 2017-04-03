@@ -107,7 +107,7 @@ def process(params):
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 
 	# run your script
-	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >>& epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
 
 	# Keep job output only if job FAILS (for debugging/so it can be re-run),
 	# otherwise, delete the output file

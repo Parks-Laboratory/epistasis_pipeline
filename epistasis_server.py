@@ -74,8 +74,11 @@ def process(params):
 	request_memory = %(use_memory)sMB
 	request_disk = 2GB
 
-	# set the interval for releasing the job if failed
+	# set the interval for releasing the job if Condor puts it on hold
 	periodic_release = (CurrentTime - EnteredCurrentStatus > 600)
+
+	# set number of times to re-run a job if script returns non-zero exit code
+	max_retries=3
 
 	# requirements = (Target.PoolName =!= "CHTC")
 	+wantGlidein = true
@@ -88,34 +91,52 @@ def process(params):
 	exec_template = textwrap.dedent(
 	'''#!/bin/bash
 
+	cleanup(){
+		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
+	}
+
+	exit_on_failure(){
+		exit_code=\$?
+		if [ ! $exit_code -eq 0 ]; then
+			cleanup
+			exit $exit_code
+		fi
+	}
+
 	# if script fails before getting to python, make sure this file exists
 	echo > epistasis_node.py.output.$1
+	exit_on_failure
 
-	# untar your files sent along by SQUID
+	# untar files sent along by SQUID
 	tar -xzvf %(squid_zip)s
+	exit_on_failure
 
-	# untar your Python installation
+	# untar Python installation
 	tar -xzvf %(python_installation)s
+	exit_on_failure
 
 	# untar ATLAS linear algebra library
 	tar -xzvf %(atlas_installation)s
+	exit_on_failure
 
 	# make sure the script will use your Python installation
 	export PATH=$(pwd)/python/bin:$PATH
+	exit_on_failure
 
 	# make sure script can find ATLAS library
 	export LD_LIBRARY_PATH=$(pwd)/atlas
+	exit_on_failure
 
 	# run your script
 	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
+	exit_on_failure
 
-	# Keep job output only if job FAILS (for debugging/so it can be re-run),
-	# otherwise, delete the output file
-	if [ $? == 0 ]; then
-		rm epistasis_node.py.output.$1
-	fi
+	# Keep job output only if job FAILS (for debugging), otherwise, delete it
+	rm epistasis_node.py.output.$1
 
-	rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
+	cleanup
+
+	exit 0
 	''').replace('\t*', '')
 
 
@@ -138,7 +159,8 @@ def process(params):
 	# give script permission to execute
 	subprocess.call('chmod +x epistasis_%(dataset)s.sh' % params, shell = True)
 
-	# add large files to a tar archive file, which will be sent over by SQUID
+	# Add large files to a tar archive file, which will be sent over by SQUID
+	# create archive, append files to it
 	subprocess.call('tar -cf %(squid_archive)s -C %(dataLoc)s/ .' % params, shell = True)
 	subprocess.call('tar -f %(squid_archive)s -C %(prog_path)s --append .' % params, shell = True)
 	# compress archive file

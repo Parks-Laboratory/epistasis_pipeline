@@ -1,13 +1,15 @@
 '''
-Arguments:	(use argparse)
+Arguments:    (use argparse)
     maf, default = 0.05
         pass to PLINK via --maf
     missing, default = 0.1
         pass to PLINK via --geno
     input file
-        columns: Mouse ID, Strain, Sex, Covar, trait1, trait2, ...
+        columns: Strain, Sex, trait
+        columns: Strain, Sex, Covar, trait1, trait2, ... (alternative)
             if Covar only contains NA, or missing, then don't create covar file
         (use filename as prefix for all generated files)
+
 
 Outputs:
     *.FILTERED.bim, *.FILTERED.bed, *.FILTERED.fam
@@ -17,15 +19,14 @@ Outputs:
 Goals of script:
 0) make *.tped, *.tfam
     call make_plink_inputs.py
-1) call fix_pheno	... replaces missing values with -9 (PLINK uses -9 as missing value)
+1) make *pheno.txt
+2) call fix_pheno    ... replaces missing values with -9 (by convention)
     see fix_pheno
-2) check fids/iids ...compares *.tfam with *.pheno.txt, makes sure 1st column same for both
+3) check fids/iids ...compares *.tfam with *.pheno.txt, makes sure 1st column same for both
     see check_fids_iids()
-2) Filter snps, make beds (populate_available)	...
+4) Filter snps, make beds (populate_available)    ...
     see populate_available()
-'''
 
-'''
 call make_plink_input.py
 optional arguments:
   -h, --help        show this help message and exit
@@ -38,11 +39,11 @@ optional arguments:
   -idCol IDCOL      name of column containing marker identifiers
   -chrCol CHRCOL    name of column containing marker chromosome labels
   -posCol POSCOL    name of column containing marker genetic distance
-  
+
   make_plink_inputs.py -strains %OUTPUT_DIR%/strains_list.txt -db HMDP -table [dbo].[genotype_calls_plink_format] -out %OUTPUT_DIR%/plink_input -idCol rsID -chrCol snp_chr -posCol snp_bp_mm10
 '''
 
-import argparse 
+import argparse
 import subprocess
 import sys
 from make_plink_inputs import get_genotypes
@@ -167,7 +168,7 @@ def check_headers(dataset):
             else:
                 print ('No phenotypes found in %s.pheno.txt!' % dataset)
 
-# function to make sure that fids and iids match across files (used to be in epistasis_pipeline.py)
+# function to make sure that fids and iids match across files (used to be in epistasis_wrapper.py)  
 def check_fids_iids(prefix):
     def get_fids_iids(fn, skip=0):
         f = open(fn)

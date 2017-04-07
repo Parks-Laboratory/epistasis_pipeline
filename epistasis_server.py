@@ -107,7 +107,7 @@ def process(params):
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 
 	# run your script
-	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s >>& epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
 
 	# Keep job output only if job FAILS (for debugging/so it can be re-run),
 	# otherwise, delete the output file
@@ -121,13 +121,11 @@ def process(params):
 
 
 	# generate output files
-	condor_output = os.path.join(condor_output_root, dataset)
-	if not os.path.exists(condor_output):
-		os.makedirs(condor_output)
+	if not os.path.exists(params['condor_output']):
+		os.makedirs(params['condor_output'])
 
-	job_output = os.path.join(job_output_root, dataset)
-	if not os.path.exists(job_output):
-		os.makedirs(job_output)
+	if not os.path.exists(params['job_output']):
+		os.makedirs(params['job_output'])
 
 	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
@@ -226,7 +224,7 @@ if __name__ == '__main__':
 						default=dataLoc, action='store')
 	parser.add_argument('-o', '--outputdir', dest='outputdir', help='specifies output folder',
 						default=job_output_root, action='store')
-	parser.add_argument('-c', '--covar', dest='covFile', help='use covariate file',
+	parser.add_argument('-c', '--covar', dest='covar', help='use covariate file',
 						default=False, action='store_true')
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default='mouse', action='store', choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
@@ -254,7 +252,7 @@ if __name__ == '__main__':
 	dataLoc = args.datadir
 	job_output_root = args.outputdir
 	list_data = args.list_dataset
-	covFile = args.covFile
+	covar = args.covar
 	memory = args.memory
 	numeric = args.numeric
 	species = args.species.lower()
@@ -282,16 +280,11 @@ if __name__ == '__main__':
 
 	# initiate params
 	covFile = '%s.covar.txt' % dataset
+	params.update({ 'covFile': ''})
 	if covar and os.path.isfile(covFile):
 		params.update({ 'covFile': '-c %s' % covFile})
 	elif covar:
-		params.update({ 'covFile': ''})
 		log.send_output('Specified --covar but no covariate file exists; ignored')
-
-
-	# set memory and max threads
-	if memory is None:
-		local_memory = 2000
 
 	if condition:
 		condition = condition[0]
@@ -303,8 +296,8 @@ if __name__ == '__main__':
 				   'dataset': dataset,
 				   'group_size': group_size,
 				   'num_jobs': num_jobs(group_size),
-				   'job_output': job_output,
-				   'condor_output': condor_output,
+				   'job_output': os.path.join(job_output_root, dataset),
+				   'condor_output': os.path.join(condor_output_root, dataset),
 				   'epistasis_script': epistasis_script,
 				   'squid_archive': squid_archive,
 				   'squid_zip': squid_archive + '.gz',
@@ -319,7 +312,7 @@ if __name__ == '__main__':
 				   'feature_selection':['', '--feature-selection'][featsel],
 				   'exclude':['', '--exclude'][exclude],
 				   'condition': ['', '--condition %s' % condition][condition is not None],
-				   'use_memory': local_memory})
+				   'use_memory': memory})
 
 	# maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 

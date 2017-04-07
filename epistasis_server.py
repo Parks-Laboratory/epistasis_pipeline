@@ -96,7 +96,7 @@ def process(params):
 	}
 
 	exit_on_failure(){
-		exit_code=\$?
+		exit_code=$?
 		if [ ! $exit_code -eq 0 ]; then
 			cleanup
 			exit $exit_code

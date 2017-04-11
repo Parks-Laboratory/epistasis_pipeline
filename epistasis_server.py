@@ -58,6 +58,8 @@ def process(params):
 	'''# Epistasis Submit File
 
 	universe = vanilla
+	requirements = (OpSysMajorVer == 6) || (OpSysMajorVer == 7)
+
 	log = %(condor_output)s/epistasis_$(Cluster).log
 	error = %(condor_output)s/epistasis_$(Cluster)_$(Process).err
 
@@ -127,7 +129,7 @@ def process(params):
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 	exit_on_failure
 
-	# run your script
+	# run script
 	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
 	exit_on_failure
 
@@ -166,7 +168,8 @@ def process(params):
 	# compress archive file
 	subprocess.call('gzip < %(squid_archive)s > %(squid_zip)s' % params, shell = True)
 	# place compressed archive file in the user's SQUID directory
-	if(subprocess.call('cp %(squid_zip)s /squid/%(username)s' % params, shell = True)):
+	subprocess.call('rm %(squid_archive)s' % params, shell = True)
+	if(subprocess.call('mv %(squid_zip)s /squid/%(username)s' % params, shell = True)):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 
 	submit_jobs(params)
@@ -191,7 +194,7 @@ def submit_jobs(params):
 	condor_cluster = subprocess.Popen(['condor_submit', 'epistasis_%(dataset)s.sub' % params], stdout=subprocess.PIPE).communicate()[0]
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
-	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
+	# log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
 def num_jobs(group_size):
 	num_snps = 0

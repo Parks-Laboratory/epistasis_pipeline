@@ -55,9 +55,11 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--maf', action='store', default = 0.05)
 parser.add_argument('--geno', action='store', default = 0.1)
+parser.add_argument('--covar', action='store_true', default=False)
 args = parser.parse_args()
 maf = args.maf
 geno = args.geno
+covar = args.covar
 
 make_bed_cmd = '%(plink_location)s --tfile sub%(dataset)s --allow-no-sex --maf 0.05 --geno 0.1 --make-bed --out %(dataset)s %(plink_species)s'
 # make_bed_cmd = '%(plink_location)s --tfile %(dataset)s --allow-no-sex --maf 0.05 --geno 0.1 --snps %(snp_range)s --make-bed --out %(dataset)s %(plink_species)s'
@@ -69,8 +71,8 @@ def convert_missing_value(str):
     return grab
 
 input_file = "EPISTASIS_TEST_TRAIT.TXT"
-pheno_prefix = input_file.split(".")[0]
-
+prefix = input_file.split(".")[0]
+suffix = ".pheno.txt" if covar else ".covar"
 with open(input_file) as f:
     traitname = f.readline().split("\t")[-1]
 
@@ -82,7 +84,7 @@ pheno_strains = [strain.replace('/', '.').replace(' ', '.') for strain in strain
 traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:])
 
 # fixphenos and write to %s.pheno.txt %pheno_prefix
-f = open(pheno_prefix + ".pheno.txt", "w")
+f = open(prefix + "suffix", "w")
 f.write(header)
 for i in range(0, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
@@ -90,7 +92,6 @@ for i in range(0, len(strains)):
     pheno_strains[i] = convert_missing_value (pheno_strains[i])
     for trait in traits[i]:
         trait = convert_missing_value (trait)
-
     f.write( pheno_strains[i] + "\t")
     f.write( str(i) + "\t")
     f.write( ".\t".join(traits[i]))
@@ -100,18 +101,19 @@ print("fixed pheno and generated pheno.txt")
 ''''
 Call get_genotypes to get the .tped and .tfam file
 '''
-get_genotypes(strains , output_fn= pheno_prefix, output_dir= "", db= "HMDP",
+get_genotypes(strains , output_fn= prefix, output_dir= "", db= "HMDP",
            view="[dbo].[genotype_calls_plink_format]")
 
 print("generated  .tped and .tfam file using get_genotypes")
+
 # function to run plink (used to be in epistasis_wrapper.py)
 def populate_available(dataset, maf,geno):
     # plink_species = ['', '--%s' % species][species != 'human']
 
     # run plink commands
     plink_location = 'plink'
-    cmd1 = "plink --tfile %s --make-bed -out %s.FULL" %(pheno_prefix, pheno_prefix)
-    cmd2 = "plink --bfile %s.FULL --maf %f --geno %f --make-bed  -out %s.FILTERED" %(pheno_prefix, maf, geno, pheno_prefix)
+    cmd1 = "plink --tfile %s --make-bed -out %s.FULL" %(prefix, prefix)
+    cmd2 = "plink --bfile %s.FULL --maf %f --geno %f --make-bed  -out %s.FILTERED" %(prefix, maf, geno, prefix)
     f = open("plink_stdout.txt", "w")
     subprocess.check_call(cmd1, shell=True, stderr=subprocess.STDOUT, stdout=f)
     subprocess.check_call(cmd2, shell=True, stderr=subprocess.STDOUT, stdout=f)
@@ -123,15 +125,16 @@ def populate_available(dataset, maf,geno):
 
 
 def check_headers(dataset):
-    tped, tfam, pheno, covar = ['%s%s' % (dataset, suffix) for suffix in ['.tped', '.tfam', '.pheno.txt', '.covar.txt']]
+    global suffix
+    tped, tfam, pheno, covar = ['%s%s' % (dataset, all_suffix) for all_suffix in ['.tped', '.tfam', suffix, '.covar.txt']]
     if dataset in pheno:
-        f = open('%s.pheno.txt' % dataset)
+        f = open('%s%s' % (dataset, suffix))
         # skip FID and IID columns
         headers = f.readline().strip().split('\t')[2:]
        # pheno_data = f.readlines()
         f.close()
 
-        # if FID/IID pairs match between .tfam and .pheno.txt, proceed
+        # if FID/IID pairs match between .tfam and suffix, proceed
         # if not, go to next file
         if check_fids_iids(dataset):
             # do nothing
@@ -140,7 +143,7 @@ def check_headers(dataset):
         else:
             # check that phenotype names don't have spaces
             problematic = [x for x in headers if ' ' in x]
-
+            param = {"suffix":suffix, "dataset": dataset}
             # check that phenotypes exist and have unique names
             if not problematic and headers and len(set(headers)) == len(headers):
                 # create phenotype key file for later reference
@@ -160,14 +163,14 @@ def check_headers(dataset):
 
             elif len(set(headers)) < len(headers):
                 duplicates = sorted([x for x in set(headers) if headers.count(x) > 1])
-                print ('Duplicated phenotype names found in %s.pheno.txt:' % dataset)
+                print ('Duplicated phenotype names found in %s%s:' % (dataset, suffix))
                 print ('\n'.join(map(str, duplicates)))
             elif problematic:
                 print ('Spaces exist in the following phenotype names:')
                 print ('\n'.join(sorted(problematic)))
-                print ("cat <(head -1 /%(dataset)s.pheno.txt | sed 's/ //g') <(tail -n+2 /%(dataset)s.pheno.txt) > tmp.txt && mv -f tmp.txt %(dataset)s.pheno.txt" % locals())
+                print ("cat <(head -1 /%(dataset)s%(suffix)s| sed 's/ //g') <(tail -n+2 /%(dataset)s%(suffix)s) > tmp.txt && mv -f tmp.txt %(dataset)s%(suffix)s" % param)
             else:
-                print ('No phenotypes found in %s.pheno.txt!' % dataset)
+                print ('No phenotypes found in %(dataset)s%(suffix)s!' % param)
 
 # function to make sure that fids and iids match across files (used to be in epistasis_wrapper.py)
 def check_fids_iids(prefix):
@@ -179,13 +182,13 @@ def check_fids_iids(prefix):
         fid_iid = [tuple(x.strip().split()[:2]) for x in f.readlines()]
         f.close()
         return fid_iid
-
-    fid_iid_tfam, fid_iid_pheno = map(get_fids_iids, ['%s.tfam' % prefix, '%s.pheno.txt' % prefix], [0, 1])
+    global suffix
+    fid_iid_tfam, fid_iid_pheno = map(get_fids_iids, ['%s.tfam' % prefix, '%s%s' % (prefix, suffix)], [0, 1])
     if fid_iid_tfam == fid_iid_pheno:
         return True
     elif set(fid_iid_tfam) == set(fid_iid_pheno):
         # FID/IID pairs can be in different order, but warn in case this is not intended
-        print ('FID/IID pairs in %s.pheno.txt are not in the same order as in %s.tfam' % (prefix, prefix))
+        print ('FID/IID pairs in %s%s are not in the same order as in %s.tfam' % ( prefix, suffix, prefix))
         return True
     else:
         missing = set(fid_iid_tfam).difference(fid_iid_pheno)
@@ -193,43 +196,40 @@ def check_fids_iids(prefix):
 
         if missing:
             # OK to have more individuals in .tfam file than .pheno.txt file
-            print ('FID/IID pairs in %s.tfam but not in %s.pheno.txt:' % (prefix, prefix))
+            print ('FID/IID pairs in %s.tfam but not in %s%s:' % (prefix, prefix, suffix))
             print ('\n'.join(['%s\t%s' % x for x in sorted(missing)]))
             return True
 
         if extra:
-            print ('FID/IID pairs in %s.pheno.txt but not in %s.tfam:' % (prefix, prefix))
+            print ('FID/IID pairs in %s%s but not in %s.tfam:' % (prefix, prefix, suffix))
             print ('\n'.join(['%s\t%s' % x for x in sorted(extra)]))
 
     return False
 
-check_fids_iids(pheno_prefix)
+check_fids_iids(prefix)
 print("finished checking the fids and iids")
-populate_available(pheno_prefix, maf, geno)
+populate_available(prefix, maf, geno)
 print ("finished generating .bed,.bim,.ped file filetering the snps specified by --maf and --geno using plink")
-check_headers(pheno_prefix)
+check_headers(prefix)
 print("finsihed checking the unique values of headers")
-# call this
-# fixpheno='''\
-# #!/bin/sh
-# while (("$#")); do
-#     if [ -e $1.pheno.txt ]; then
-#         echo Fixing $1.pheno.txt;
-#                 head -1 $1.pheno.txt > tmp.pheno.txt;
-#                 tail -n+2 $1.pheno.txt | sed -r 's/ /\./g;s/\//\./g;s/(NULL|NA|#NUM!|-Inf|Inf)/-9/g' >> tmp.pheno.txt;
-#                 mv -f tmp.pheno.txt $1.pheno.txt;
-#         fi;
-#         if [ -e $1.covar.txt ]; then
-#                 echo Fixing $1.covar.txt;
-#                 sed -i 's/ /\./g;s/\//\./g;s/(NULL|NA|#NUM!|-Inf|Inf)/-9/g' $1.covar.txt;
-#         fi;
-#         shift;
-# done'''
-# from pyresource import resource
-# f = open("fixpheno.sh", "w")
-# f.write(fixpheno)
-# f.close()
-# subprocess.call(["fixpheno.sh", pheno_prefix], shell=True)
+
+import shutil
+# move data .bed, *.bim, *.fam, *.pheno.txt into new directory data
+if not os.path.exists("data"):
+    os.makedirs("data")
+
+# filelist = [file for file in os.listdir('.') if (re.search(".*.bed|.*.bim|.*.fam|.*{0!s}".format(suffix), file))]
+filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*.bed|{0!s}.*.bim|{0!s}.*.fam|{0!s}.*{1!s}"
+                                                            .format(prefix, suffix).replace("'",""), file))]
+
+print( "moved following files to directory data: \n" + "\n".join(filelist2))
+for file in filelist2:
+    shutil.copy(file,"./data")
+
+# for file in map(lambda x: prefix + x, [".*.tped", ".*.bim",".*.fam", ".*.pheno.txt"]):
+#     re.ma
+#     shutil.move(file, "/data")
+
 #subprocess.call('dir',shell=True)
 
 

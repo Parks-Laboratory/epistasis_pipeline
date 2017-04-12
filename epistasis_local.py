@@ -14,17 +14,18 @@ Arguments:    (use argparse)
 Outputs:
     *.FILTERED.bim, *.FILTERED.bed, *.FILTERED.fam
     *.FULL.bim, *.FULL.bed, *.FULL.fam
-    *.pheno.txt (altered)
+    *.pheno.txt
 
 Goals of script:
-0) make *.tped, *.tfam
+0) maybe prune out hetero strains
+1) make *.tped, *.tfam
     call make_plink_inputs.py
-1) make *pheno.txt
-2) call fix_pheno    ... replaces missing values with -9 (by convention)
+2) make *pheno.txt
+4) call fix_pheno    ... replaces missing values with -9 (by convention)
     see fix_pheno
-3) check fids/iids ...compares *.tfam with *.pheno.txt, makes sure 1st column same for both
+8) check fids/iids ...compares *.tfam with *.pheno.txt, makes sure 1st column same for both
     see check_fids_iids()
-4) Filter snps, make beds (populate_available)    ...
+16) Filter snps, make beds (populate_available)    ...
     see populate_available()
 
 call make_plink_input.py

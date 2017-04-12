@@ -14,7 +14,7 @@ Arguments:    (use argparse)
 Outputs:
     *.FILTERED.bim, *.FILTERED.bed, *.FILTERED.fam
     *.FULL.bim, *.FULL.bed, *.FULL.fam
-    *.pheno.txt (altered)
+    *.pheno.txt
 
 Goals of script:
 0) maybe prune out hetero strains
@@ -169,7 +169,7 @@ def check_headers(dataset):
             else:
                 print ('No phenotypes found in %s.pheno.txt!' % dataset)
 
-# function to make sure that fids and iids match across files (used to be in epistasis_wrapper.py)  
+# function to make sure that fids and iids match across files (used to be in epistasis_wrapper.py)
 def check_fids_iids(prefix):
     def get_fids_iids(fn, skip=0):
         f = open(fn)

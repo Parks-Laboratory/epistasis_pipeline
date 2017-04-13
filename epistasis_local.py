@@ -56,7 +56,24 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--maf', action='store', default = 0.05)
 parser.add_argument('--geno', action='store', default = 0.1)
 parser.add_argument('--covar', action='store_true', default=False)
+'''
+--genotype: select to run get genotype 
+--plink: select to run plink command 
+--check: select to run check IID/FID
+--hold: hold the ouput file to the current directory
+'''
+parser.add_argument('--genotype', action='store_true', default=False)
+parser.add_argument('--plink', action='store_true', default=False)
+parser.add_argument('--check', action='store_true', default=False)
+parser.add_argument('--hold', action='store_true', default=False)
+
 args = parser.parse_args()
+if ((not args.plink) and (not args.check) and (not args.genotype)):
+    plink = check = genotypes = True
+else:
+    plink, check, genotypes = args.plink, args.check, args.genotype
+
+hold = args.hold
 maf = args.maf
 geno = args.geno
 covar = args.covar
@@ -72,7 +89,7 @@ def convert_missing_value(str):
 
 input_file = "EPISTASIS_TEST_TRAIT.TXT"
 prefix = input_file.split(".")[0]
-suffix = ".pheno.txt" if covar else ".covar"
+suffix = ".covar" if covar else ".pheno.txt"
 with open(input_file) as f:
     traitname = f.readline().split("\t")[-1]
 
@@ -101,8 +118,9 @@ print("fixed pheno and generated pheno.txt")
 ''''
 Call get_genotypes to get the .tped and .tfam file
 '''
-get_genotypes(strains , output_fn= prefix, output_dir= "", db= "HMDP",
-           view="[dbo].[genotype_calls_plink_format]")
+if  genotypes:
+    get_genotypes(strains , output_fn= prefix, output_dir= "", db= "HMDP",
+               view="[dbo].[genotype_calls_plink_format]")
 
 print("generated  .tped and .tfam file using get_genotypes")
 
@@ -121,7 +139,6 @@ def populate_available(dataset, maf,geno):
     #chroms = map(str, range(1, species_chroms[species] + 1))
     # n_snps = int(subprocess.Popen(['wc', '-l', '%s.bim' % dataset], stdout=subprocess.PIPE).communicate()[0].split()[0])
     sys.stdout.flush()
-
 
 
 def check_headers(dataset):
@@ -206,33 +223,37 @@ def check_fids_iids(prefix):
 
     return False
 
-check_fids_iids(prefix)
+def transfer_files():
+    import shutil, fnmatch
+    # move data .bed, *.bim, *.fam, *.pheno.txt into new directory data
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    # filelist = [file for file in os.listdir('.') if (re.search(".*.bed|.*.bim|.*.fam|.*{0!s}".format(suffix), file))]
+    filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*.bed|{0!s}.*.bim|{0!s}.*.fam|{0!s}.*{1!s}"
+                                                                .format(prefix, suffix).replace("'", ""), file))]
+
+    for file in filelist2:
+        if(os.path.exists("./data/{0!s}".format(file))):
+            print("file:{0!s} already exists in /data, and will be overwritten...".format(file))
+            os.remove("./data/{0!s}".format(file))
+        shutil.move(file, "./data", )
+        print("successfully moved file:{0!s} to ./data".format(file))
+
+    print("moved following files to directory data: \n" + "\n".join(filelist2))
+if check:
+    check_fids_iids(prefix)
 print("finished checking the fids and iids")
-populate_available(prefix, maf, geno)
-print ("finished generating .bed,.bim,.ped file filetering the snps specified by --maf and --geno using plink")
+
+if plink:
+    populate_available(prefix, maf, geno)
+    print ("finished generating .bed,.bim,.ped file filetering the snps specified by --maf and --geno using plink")
+
 check_headers(prefix)
 print("finsihed checking the unique values of headers")
 
-import shutil
-# move data .bed, *.bim, *.fam, *.pheno.txt into new directory data
-if not os.path.exists("data"):
-    os.makedirs("data")
-
-# filelist = [file for file in os.listdir('.') if (re.search(".*.bed|.*.bim|.*.fam|.*{0!s}".format(suffix), file))]
-filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*.bed|{0!s}.*.bim|{0!s}.*.fam|{0!s}.*{1!s}"
-                                                            .format(prefix, suffix).replace("'",""), file))]
-
-print( "moved following files to directory data: \n" + "\n".join(filelist2))
-for file in filelist2:
-    shutil.copy(file,"./data")
-
-# for file in map(lambda x: prefix + x, [".*.tped", ".*.bim",".*.fam", ".*.pheno.txt"]):
-#     re.ma
-#     shutil.move(file, "/data")
-
-#subprocess.call('dir',shell=True)
-
-
+if not hold:
+    transfer_files()
 
 '''
 dataset is file prefix

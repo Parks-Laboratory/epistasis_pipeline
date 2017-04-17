@@ -18,7 +18,7 @@
 		**epistasis_node.py**
 2. `python epistasis_server.py <prefix> [options]`
 
-## Running the Epistasis Pipeline on UW-Madison Clusters
+## (Legacy instructions) Running the Epistasis Pipeline on UW-Madison Clusters
 
 1. add files (tfam, tped, pheno, covar) to the **epistasis/data/** directory  
 2. copy **fixpheno.sh** file into the **epistasis/data/** directory  

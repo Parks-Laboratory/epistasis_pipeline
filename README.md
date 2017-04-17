@@ -1,5 +1,23 @@
 # Epistasis Pipeline
 
+## Step 1: Filtering markers, making pheno file (epistasis_local.py)
+
+## Step 2: Preparing files for transfer, submit jobs (epistasis_server.py)
+1. scp **data/**, **scripts/**, **epistasis_server.py** to submit server
+	* **data/** contains 
+		**_prefix_.FILTERED.bim**, 
+		**_prefix_.FILTERED.bed**, 
+		**_prefix_.FILTERED.fam**, 
+		**_prefix_.FULL.bim**, 
+		**_prefix_.FULL.bed**, 
+		**_prefix_.FULL.fam**, and 
+		**_prefix_.pheno.txt**
+	* **scripts/** contains 
+		**python.tar.gz** (portable Python 2.7 installation), 
+		**atlas.tar.gz** (ATLAS library), and 	
+		**epistasis_node.py**
+2. `python epistasis_server.py <prefix> [options]`
+
 ## Running the Epistasis Pipeline on UW-Madison Clusters
 
 1. add files (tfam, tped, pheno, covar) to the **epistasis/data/** directory  
@@ -13,20 +31,7 @@
 8. check the **condor_out/** directory for any errors  
 9. clear out the **data/** directory for next time  
 
-
-NOTE:
-
-* Sometimes the "condor_q" command fails and quits the program unexpectedly. In this case, rerun the pipeline  
-* Ensure that files scripts/fastlmmc, scripts/plink, fixpheno.sh are executable (green). If not run the command `chmod +x FILE_NAME`
-
 REQUIREMENTS:
 
 * CHTC account
 * SQUID directory
-
-## Future work
-* Modify epistasis_server.py to continuously monitor for failed jobs and to
-re-submit them if appropriate
-	* add periodic_release code
-	* use HoldReasonCode?
-* Monitor for completed jobs, delete their associated .err, .out files if appropriate to reduce space used on submit server

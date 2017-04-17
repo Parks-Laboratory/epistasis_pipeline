@@ -18,6 +18,11 @@
 		**epistasis_node.py**
 2. `python epistasis_server.py <prefix> [options]`
 
+## Requirements
+* CHTC account
+* SQUID directory
+
+
 ## (Legacy instructions) Running the Epistasis Pipeline on UW-Madison Clusters
 
 1. add files (tfam, tped, pheno, covar) to the **epistasis/data/** directory  
@@ -31,7 +36,3 @@
 8. check the **condor_out/** directory for any errors  
 9. clear out the **data/** directory for next time  
 
-REQUIREMENTS:
-
-* CHTC account
-* SQUID directory

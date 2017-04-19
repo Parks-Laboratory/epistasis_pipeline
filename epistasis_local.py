@@ -231,7 +231,7 @@ def transfer_files():
         os.makedirs("data")
 
     # filelist = [file for file in os.listdir('.') if (re.search(".*.bed|.*.bim|.*.fam|.*{0!s}".format(suffix), file))]
-    filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*.bed|{0!s}.*.bim|{0!s}.*.fam|{0!s}.*{1!s}"
+    filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*\.bed|{0!s}.*\.bim|{0!s}.*\.fam|{0!s}.*{1!s}"
                                                                 .format(prefix, suffix).replace("'", ""), file))]
 
     for file in filelist2:

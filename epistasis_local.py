@@ -93,7 +93,7 @@ prefix = input_file.split(".")[0]
 with open(input_file) as f:
     traits = f.readline().split("\t")
     last_column =traits[-1]
-suffix = ".covar" if (last_column == 'Covar') else ".pheno.txt"
+suffix = ".covar.txt" if (last_column.strip() == 'Covar') else ".pheno.txt"
 header = ["FID", "IID", "\t".join(traits[2:])]
 header = "\t".join(header)
 
@@ -114,7 +114,7 @@ for i in range(0, len(strains)):
     f.write( str(i) + "\t")
     f.write( ".\t".join(traits[i]))
 f.close()
-print("fixed pheno and generated pheno.txt")
+print("fixed pheno and generated %s file" %(suffix))
 
 ''''
 Call get_genotypes to get the .tped and .tfam file

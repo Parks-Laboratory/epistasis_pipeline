@@ -1,6 +1,7 @@
 # Epistasis Pipeline
 
 ## Step 1: Filtering markers, making pheno file (epistasis_local.py)
+1. `python epistasis_local.py <name of pheno file>`
 
 ## Step 2: Preparing files for transfer, submit jobs (epistasis_server.py)
 1. scp **data/**, **scripts/**, **epistasis_server.py** to submit server

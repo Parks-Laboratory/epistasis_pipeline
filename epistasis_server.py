@@ -194,7 +194,7 @@ def submit_jobs(params):
 	condor_cluster = subprocess.Popen(['condor_submit', 'epistasis_%(dataset)s.sub' % params], stdout=subprocess.PIPE).communicate()[0]
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
-	# log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
+	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
 def num_jobs(group_size):
 	num_snps = 0

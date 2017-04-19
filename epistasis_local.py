@@ -53,6 +53,7 @@ import re
 import os
 
 parser = argparse.ArgumentParser()
+parser.add_argument('file', action = 'store')
 parser.add_argument('--maf', action='store', default = 0.05)
 parser.add_argument('--geno', action='store', default = 0.1)
 parser.add_argument('--covar', action='store_true', default=False)
@@ -86,8 +87,8 @@ def convert_missing_value(str):
     if (grab == "NULL" )or (grab == "NA") or (grab  == "#NUM!" )or (grab  == "-Inf") or (grab == "Inf"):
         grab = "-9"
     return grab
-
-input_file = "EPISTASIS_TEST_TRAIT.TXT"
+# print("args.file: " + args.file)
+input_file = args.file
 prefix = input_file.split(".")[0]
 suffix = ".covar" if covar else ".pheno.txt"
 with open(input_file) as f:
@@ -101,7 +102,7 @@ pheno_strains = [strain.replace('/', '.').replace(' ', '.') for strain in strain
 traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:])
 
 # fixphenos and write to %s.pheno.txt %pheno_prefix
-f = open(prefix + "suffix", "w")
+f = open(prefix + suffix, "w")
 f.write(header)
 for i in range(0, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
@@ -114,7 +115,7 @@ for i in range(0, len(strains)):
     f.write( ".\t".join(traits[i]))
 f.close()
 print("fixed pheno and generated pheno.txt")
-
+exit(1)
 ''''
 Call get_genotypes to get the .tped and .tfam file
 '''

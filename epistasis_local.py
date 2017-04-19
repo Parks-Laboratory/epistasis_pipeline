@@ -90,11 +90,11 @@ def convert_missing_value(str):
 # print("args.file: " + args.file)
 input_file = args.file
 prefix = input_file.split(".")[0]
-suffix = ".covar" if covar else ".pheno.txt"
 with open(input_file) as f:
-    traitname = f.readline().split("\t")[-1]
-
-header = ["FID", "IID", traitname]
+    traits = f.readline().split("\t")
+    last_column =traits[-1]
+suffix = ".covar" if (last_column == 'Covar') else ".pheno.txt"
+header = ["FID", "IID", "\t".join(traits[2:])]
 header = "\t".join(header)
 
 strains =  ([x.split('\t')[0] for x in open(input_file).readlines()][1:])
@@ -115,7 +115,7 @@ for i in range(0, len(strains)):
     f.write( ".\t".join(traits[i]))
 f.close()
 print("fixed pheno and generated pheno.txt")
-exit(1)
+
 ''''
 Call get_genotypes to get the .tped and .tfam file
 '''

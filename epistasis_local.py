@@ -94,16 +94,16 @@ with open(input_file) as f:
     traits = f.readline().split("\t")
     last_column =traits[-1]
 suffix = ".covar.txt" if (last_column.strip() == 'Covar') else ".pheno.txt"
-header = ["FID", "IID", "\t".join(traits[2:])]
+header = ["FID", "IID", "\t".join(traits[2:])] if (suffix == ".pheno.txt") else ["FID", "IID", "\t".join(traits[2: -1])]
 header = "\t".join(header)
-
+# print(header)
 strains =  ([x.split('\t')[0] for x in open(input_file).readlines()][1:])
 pheno_strains = [strain.replace('/', '.').replace(' ', '.') for strain in strains]
-traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:])
+traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:]) if(suffix == ".pheno.txt") else ([x.split('\t')[2:-1] for x in open(input_file).readlines()][1:])
 
 # fixphenos and write to %s.pheno.txt %pheno_prefix
-f = open(prefix + suffix, "w")
-f.write(header)
+f = open(prefix + ".pheno.txt", "w")
+f.write(header + "\n")
 for i in range(0, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
     # replace " " with "\."
@@ -113,8 +113,23 @@ for i in range(0, len(strains)):
     f.write( pheno_strains[i] + "\t")
     f.write( str(i) + "\t")
     f.write( ".\t".join(traits[i]))
+    f.write("\n")
 f.close()
-print("fixed pheno and generated %s file" %(suffix))
+print("fixed pheno and generated .pheno.txt file")
+if(suffix == ".covar.txt"):
+    header =  ["FID", "IID", last_column]
+    header = "\t".join(header)
+   # print("covar header:" + header)
+    covar_col = ([x.split('\t')[-1] for x in open(input_file).readlines()][1:])
+    with open(prefix + ".covar.txt", "w") as f:
+        f.write(header)
+        for i in range(0, len(strains)):
+            pheno_strains[i] = convert_missing_value(pheno_strains[i])
+            f.write(pheno_strains[i] + "\t")
+            f.write(str(i) + "\t")
+            f.write(covar_col[i])
+f.close()
+print("generated .covar.txt file")
 
 ''''
 Call get_genotypes to get the .tped and .tfam file
@@ -144,9 +159,9 @@ def populate_available(dataset, maf,geno):
 
 def check_headers(dataset):
     global suffix
-    tped, tfam, pheno, covar = ['%s%s' % (dataset, all_suffix) for all_suffix in ['.tped', '.tfam', suffix, '.covar.txt']]
+    tped, tfam, pheno, covar = ['%s%s' % (dataset, all_suffix) for all_suffix in ['.tped', '.tfam', '.pheno.txt', '.covar.txt']]
     if dataset in pheno:
-        f = open('%s%s' % (dataset, suffix))
+        f = open('%s.pheno.txt' % (dataset))
         # skip FID and IID columns
         headers = f.readline().strip().split('\t')[2:]
        # pheno_data = f.readlines()
@@ -161,7 +176,7 @@ def check_headers(dataset):
         else:
             # check that phenotype names don't have spaces
             problematic = [x for x in headers if ' ' in x]
-            param = {"suffix":suffix, "dataset": dataset}
+            param = {"suffix":".pheno.txt", "dataset": dataset}
             # check that phenotypes exist and have unique names
             if not problematic and headers and len(set(headers)) == len(headers):
                 # create phenotype key file for later reference
@@ -181,7 +196,7 @@ def check_headers(dataset):
 
             elif len(set(headers)) < len(headers):
                 duplicates = sorted([x for x in set(headers) if headers.count(x) > 1])
-                print ('Duplicated phenotype names found in %s%s:' % (dataset, suffix))
+                print ('Duplicated phenotype names found in %s.pheno.txt:' % (dataset))
                 print ('\n'.join(map(str, duplicates)))
             elif problematic:
                 print ('Spaces exist in the following phenotype names:')
@@ -231,8 +246,8 @@ def transfer_files():
         os.makedirs("data")
 
     # filelist = [file for file in os.listdir('.') if (re.search(".*.bed|.*.bim|.*.fam|.*{0!s}".format(suffix), file))]
-    filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*\.bed|{0!s}.*\.bim|{0!s}.*\.fam|{0!s}.*{1!s}"
-                                                                .format(prefix, suffix).replace("'", ""), file))]
+    filelist2 = [file for file in os.listdir('.') if (re.search("{0!s}.*\.bed|{0!s}.*\.bim|{0!s}.*\.fam|{0!s}.*.pheno.txt|{0!s}.*\.covar.txt"
+                                                                .format(prefix).replace("'", ""), file))]
 
     for file in filelist2:
         if(os.path.exists("./data/{0!s}".format(file))):
@@ -241,7 +256,7 @@ def transfer_files():
         shutil.move(file, "./data", )
         print("successfully moved file:{0!s} to ./data".format(file))
 
-    print("moved following files to directory data: \n" + "\n".join(filelist2))
+    print("moved following files to directory ./data: \n" + "\n".join(filelist2))
 if check:
     check_fids_iids(prefix)
 print("finished checking the fids and iids")

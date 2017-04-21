@@ -306,7 +306,7 @@ if __name__ == '__main__':
 	# initiate params
 	covFile = '%s.covar.txt' % dataset
 	params.update({ 'covFile': ''})
-	if covar and os.path.isfile(covFile):
+	if covar and os.path.isfile(os.path.join(dataLoc,covFile)):
 		params.update({ 'covFile': '-c %s' % covFile})
 	elif covar:
 		log.send_output('Specified --covar but no covariate file exists; ignored')

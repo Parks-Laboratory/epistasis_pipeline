@@ -4,11 +4,13 @@ import os
 from functools import reduce
 import argparse
 
-# Specify the path of file folder
 parser = argparse.ArgumentParser(description="specifying argument for populating .gwas file")
+# Specify the name of the table
 parser.add_argument('table_name', action='store', help="the table to be populate the data")
 parser.add_argument('-c', '--create', action='store_true', help="weather to create a new database", default=False)
+# Specify the path of file folder
 parser.add_argument('-p', '--path', action='store', help="path of the directory that contains .gwas file", default=".")
+# Specify the database
 parser.add_argument('-db', '--database', action='store', help="the destination database", default="Epistasis")
 args = parser.parse_args()
 path = args.path
@@ -17,7 +19,7 @@ table_name = args.table_name
 create = args.create
 '''
 create a table to populate: 
-    the current shema is fixed as (SNP1 varchar, SNP2 varchar, Trait varchar, Pvalue float)
+    the current schema is fixed as (SNP1 varchar(20), SNP2 varchar(20), Trait varchar(50), Pvalue float)
 '''
 def create_table(db, table_name):
     global cursor
@@ -92,8 +94,7 @@ if __name__ == '__main__':
     # create table if specified
     if create:
         create_table(database, table_name)
-    col_name = get_schema(database, table_name)
-    print(col_name)
+    
     # search infomation from .gwas file through the directory specified by <path>
     for fileName in fileNames:
         # get the trait from file name
@@ -112,7 +113,7 @@ if __name__ == '__main__':
                     query = "insert into dbo.{!s}".format(table_name) +\
                    "(SNP1, SNP2, Trait, Pvalue)" + \
                     " values ({!r}, {!r}, {!r}, {:.16f})".format(row[0], row[1], trait, float(row[-1]))
-                    print(query)
+                    # print(query)
                     cursor.execute(query)
                     # current setting is to commit every execution of the query
                     cursor.commit()

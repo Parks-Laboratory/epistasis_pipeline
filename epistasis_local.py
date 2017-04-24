@@ -103,7 +103,7 @@ traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:]) if(suff
 
 # fixphenos and write to %s.pheno.txt %pheno_prefix
 f = open(prefix + ".pheno.txt", "w")
-f.write(header + "\n")
+f.write(header)
 for i in range(0, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
     # replace " " with "\."
@@ -113,7 +113,7 @@ for i in range(0, len(strains)):
     f.write( pheno_strains[i] + "\t")
     f.write( str(i) + "\t")
     f.write( ".\t".join(traits[i]))
-    f.write("\n")
+    #f.write("\n")
 f.close()
 print("fixed pheno and generated .pheno.txt file")
 if(suffix == ".covar.txt"):

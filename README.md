@@ -22,8 +22,8 @@
 		**atlas.tar.gz** (ATLAS library), and 	
 		**epistasis_node.py**
 2. `python epistasis_server.py <prefix> [options]`
-	Use 'ls results/<prefix>/ | wc -l' to check the current returned file numbers
-3. run the following command on local machine: 'scp -r <CONDOR_ADDRESS>:results <destination_directory_at_Parks_Lab>'
+	Use 'ls results/< prefix > | wc -l' to check the current returned file numbers
+3. run the following command on local machine: 'scp -r < CONDOR_ADDRESS >:results < destination_directory_at_Parks_Lab >'
 
 ## Requirements
 * CHTC account

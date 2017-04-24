@@ -50,8 +50,25 @@ def timestamp():
 	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
 
 def process(params):
-
 	os.chdir(root)
+	make_output_dirs(params)
+
+	write_submission_file(params)
+	write_shell_script(params)
+
+	package_SQUID_files(params)
+	submit_jobs(params)
+
+
+def write_submission_files(params):
+	pass
+
+
+def write_submission_file(params, offset=0):
+	'''
+	Arguments:
+	offset -- used w/ DAGMan to split up jobs
+	'''
 
 	# submit and executable files
 	submit_template = textwrap.dedent(
@@ -89,7 +106,12 @@ def process(params):
 	queue %(num_jobs)s
 	''').replace('\t*', '')
 
+	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
+	submit_file.write( (submit_template % params).replace(',,', ',') )
+	submit_file.close()
 
+
+def write_shell_script(params):
 	exec_template = textwrap.dedent(
 	'''#!/bin/bash
 
@@ -141,19 +163,6 @@ def process(params):
 	exit 0
 	''').replace('\t*', '')
 
-
-
-	# generate output files
-	if not os.path.exists(params['condor_output']):
-		os.makedirs(params['condor_output'])
-
-	if not os.path.exists(params['job_output']):
-		os.makedirs(params['job_output'])
-
-	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
-	submit_file.write( (submit_template % params).replace(',,', ',') )
-	submit_file.close()
-
 	exec_file = open( 'epistasis_%(dataset)s.sh' % params, 'w')
 	exec_file.write( exec_template % params )
 	exec_file.close()
@@ -161,6 +170,16 @@ def process(params):
 	# give script permission to execute
 	subprocess.call('chmod +x epistasis_%(dataset)s.sh' % params, shell = True)
 
+
+def make_output_dirs(params):
+	if not os.path.exists(params['condor_output']):
+		os.makedirs(params['condor_output'])
+
+	if not os.path.exists(params['job_output']):
+		os.makedirs(params['job_output'])
+
+
+def package_SQUID_files(params):
 	# Add large files to a tar archive file, which will be sent over by SQUID
 	# create archive, append files to it
 	subprocess.call('tar -cf %(squid_archive)s -C %(dataLoc)s/ .' % params, shell = True)
@@ -172,22 +191,6 @@ def process(params):
 	if(subprocess.call('mv %(squid_zip)s /squid/%(username)s' % params, shell = True)):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 
-	submit_jobs(params)
-
-def write_submission_files(params):
-	pass
-
-def write_submission_file(params, offset):
-	pass
-
-def write_shell_script(params):
-	pass
-
-def make_output_dirs(params):
-	pass
-
-def package_SQUID_files(params):
-	pass
 
 def submit_jobs(params):
 	# submit jobs to condor
@@ -195,6 +198,7 @@ def submit_jobs(params):
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
+
 
 def num_jobs(group_size):
 	num_snps = 0
@@ -216,6 +220,7 @@ def num_jobs(group_size):
 	num_AA_jobs = ceil(num_groups/2)
 
 	return int(num_AB_jobs + num_AA_jobs)
+
 
 def check_prefixes(dataloc, dataset):
 	'''

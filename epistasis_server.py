@@ -250,34 +250,49 @@ if __name__ == '__main__':
 ''' % dataLoc)
 	#parser.set_usage('''%(prog)s [options] [dataset1] [dataset2] ... (runs all datasets if unspecified)
 	#PLINK-formatted genotype (*.tped, *.tfam) and alternate phenotype (*.pheno.txt) files should be placed in ''' + dataLoc)
-	parser.add_argument('dataset', metavar='dataset', nargs=1, type=str, help='dataset(s) to process')
+	parser.add_argument('dataset', metavar='dataset', nargs=1, type=str,
+		help='dataset(s) to process')
 
-	parser.add_argument('-l', '--list', dest='list_dataset', help='lists datasets to process, does not do processing',
-						default=False, action='store_true')
-	parser.add_argument('-d', '--datadir', dest='datadir', help='specifies folder to search for raw data',
-						default=dataLoc, action='store')
-	parser.add_argument('-o', '--outputdir', dest='outputdir', help='specifies output folder',
-						default=job_output_root, action='store')
-	parser.add_argument('-c', '--covar', dest='covar', help='use covariate file',
-						default=False, action='store_true')
-	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
-						default='mouse', action='store', choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
-	parser.add_argument('-m', '--memory', dest='memory', help='amount of RAM (in GB) requested per job',
-						default=8, action='store', type=int)
-	parser.add_argument('--maxthreads', dest='maxthreads', help='maximum # of threads to use',
-						default=1, action='store', choices=range(1, 17), type=int)
-	parser.add_argument('-f', '--feature-selection', dest='featsel', help='perform feature selection',
-						default=False, action='store_true')
-	parser.add_argument('-e', '--excludeByPosition', dest='exclude', help='exclude SNPs within 2Mb of tested SNP from kinship matrix construction',
-						default=False, action='store_true')
-	parser.add_argument('-n', '--numeric_phenotype_id', dest='numeric', help='convert phenotype names to numbers (for safety)',
-						nargs='?', default=0, const=1, type=int, action='store', choices=[0, 1, 2])
-	parser.add_argument('-q', '--quiet', dest='debug', help="suppress debugging output",
-						default=True, action='store_false')
-	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+', help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
-	parser.add_argument('--condition', dest='condition', help='condition on SNP {snp_id}',
-						action='store', nargs=1)
-	parser.add_argument('-g', '--group_size', type=int, help='number of snps in a group', action = 'store', default=1200)
+	parser.add_argument('-l', '--list', dest='list_dataset',
+		help='lists datasets to process, does not do processing',
+		default=False, action='store_true')
+	parser.add_argument('-d', '--datadir', dest='datadir',
+		help='specifies folder to search for raw data',
+		default=dataLoc, action='store')
+	parser.add_argument('-o', '--outputdir', dest='outputdir',
+		help='specifies output folder',
+		default=job_output_root, action='store')
+	parser.add_argument('-c', '--covar', dest='covar',
+		help='use covariate file',
+		default=False, action='store_true')
+	parser.add_argument('-s', '--species', dest='species',
+		help='mouse or human',
+		default='mouse', action='store',
+		choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
+	parser.add_argument('-m', '--memory', dest='memory',
+		help='amount of RAM (in GB) requested per job',
+		default=8, action='store', type=int)
+	parser.add_argument('--maxthreads', dest='maxthreads',
+		help='maximum # of threads to use',
+		default=1, action='store', choices=range(1, 17), type=int)
+	parser.add_argument('-f', '--feature-selection', dest='featsel',
+		help='perform feature selection',
+		default=False, action='store_true')
+	parser.add_argument('-e', '--excludeByPosition', dest='exclude',
+		help='exclude SNPs within 2Mb of tested SNP from kinship matrix construction',
+		default=False, action='store_true')
+	parser.add_argument('-n', '--numeric_phenotype_id', dest='numeric',
+		help='convert phenotype names to numbers (for safety)',
+		nargs='?', default=0, const=1, type=int, action='store', choices=[0, 1, 2])
+	parser.add_argument('-q', '--quiet', dest='debug',
+		help="suppress debugging output",
+		default=True, action='store_false')
+	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+',
+		help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
+	parser.add_argument('--condition', dest='condition',
+		help='condition on SNP {snp_id}', action='store', nargs=1)
+	parser.add_argument('-g', '--group_size', type=int,
+		help='number of snps in a group', action = 'store', default=1500)
 
 	args = parser.parse_args()
 

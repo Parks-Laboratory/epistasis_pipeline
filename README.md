@@ -1,8 +1,12 @@
 # Epistasis Pipeline
 
 ## Step 1: Filtering markers, making pheno file (epistasis_local.py)
-1. `python epistasis_local.py <name of pheno file>`
-
+1. `python epistasis_local.py <name of pheno file> [--maf] [--geno] [--genotype] [--plink] [--check] [--hold]`
+	* **--maf, --geno specifies the maf and geno threshold**
+	* **--genotype specifies generate ONLY _prefix_.tped and _prefix_.tfam file**
+	* **--plink specifies ONLY run plink on existing _prefix_.tped and _prefix_.tfam files and generate _prefix_.FILTERED(FULL).bim/bed/fam**
+	* **--check specifies ONLY check fids and iids match across generated files**
+	* **--hold specifies not transfer required files to ./data/ folder**
 ## Step 2: Preparing files for transfer, submit jobs (epistasis_server.py)
 1. scp **data/**, **scripts/**, **epistasis_server.py** to submit server
 	* **data/** contains 
@@ -18,6 +22,8 @@
 		**atlas.tar.gz** (ATLAS library), and 	
 		**epistasis_node.py**
 2. `python epistasis_server.py <prefix> [options]`
+	Use `ls results/<prefix> | wc -l` to check the current returned file numbers
+3. run the following command on local machine: `scp -r <CONDOR_ADDRESS>:results <destination_directory_at_Parks_Lab>`
 
 ## Requirements
 * CHTC account

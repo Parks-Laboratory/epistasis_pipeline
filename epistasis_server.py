@@ -90,7 +90,7 @@ def write_submission_file(params, offset=0):
 	transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/%(username)s/%(squid_zip)s
 
 	request_cpus = 1
-	request_memory = %(use_memory)sMB
+	request_memory = %(use_memory)sGB
 	request_disk = 2GB
 
 	# set the interval for releasing the job if Condor puts it on hold
@@ -115,6 +115,7 @@ def write_shell_script(params):
 	exec_template = textwrap.dedent(
 	'''#!/bin/bash
 
+
 	cleanup(){
 		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
 	}
@@ -128,7 +129,8 @@ def write_shell_script(params):
 	}
 
 	# if script fails before getting to python, make sure this file exists
-	echo > epistasis_node.py.output.$1
+	ps aux > epistasis_node.py.output.$1
+	cat /etc/*-release >> epistasis_node.py.output.$1
 	exit_on_failure
 
 	# untar files sent along by SQUID
@@ -142,6 +144,8 @@ def write_shell_script(params):
 	# untar ATLAS linear algebra library
 	tar -xzvf %(atlas_installation)s
 	exit_on_failure
+
+	ls >> epistasis_node.py.output.$1
 
 	# make sure the script will use your Python installation
 	export PATH=$(pwd)/python/bin:$PATH
@@ -258,8 +262,8 @@ if __name__ == '__main__':
 						default=False, action='store_true')
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default='mouse', action='store', choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
-	parser.add_argument('-m', '--memory', dest='memory', help='amount of RAM (in megabytes) requested per job',
-						default=2000, action='store', type=int)
+	parser.add_argument('-m', '--memory', dest='memory', help='amount of RAM (in GB) requested per job',
+						default=8, action='store', type=int)
 	parser.add_argument('--maxthreads', dest='maxthreads', help='maximum # of threads to use',
 						default=1, action='store', choices=range(1, 17), type=int)
 	parser.add_argument('-f', '--feature-selection', dest='featsel', help='perform feature selection',

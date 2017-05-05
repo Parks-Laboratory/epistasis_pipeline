@@ -94,7 +94,7 @@ if __name__ == '__main__':
     # create table if specified
     if create:
         create_table(database, table_name)
-    
+
     # search infomation from .gwas file through the directory specified by <path>
     for fileName in fileNames:
         # get the trait from file name

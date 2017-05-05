@@ -143,6 +143,9 @@ def write_shell_script(params, flags):
 	export PATH=$(pwd)/python/bin:$PATH
 	exit_on_failure
 
+	# tell python where the user's home directory is located
+	export PYTHONUSERBASE=.
+
 	# make sure script can find ATLAS library
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 	exit_on_failure

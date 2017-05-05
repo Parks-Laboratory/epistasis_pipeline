@@ -106,6 +106,8 @@ def write_submission_file(params, flags, offset=0):
 	queue %(num_jobs)s
 	''').replace('\t*', '')
 
+	params['num_jobs'] = calculate_num_jobs(params, group_size)
+
 	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
 	submit_file.close()
@@ -237,14 +239,17 @@ def submit_jobs(params):
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
-
-def num_jobs(group_size):
+def get_num_filtered_snps(params):
 	num_snps = 0
-	with open(os.path.join(dataLoc, dataset+FILTERED_DATASET+'.bim')) as file:
+	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as file:
 		for line in file.readlines():
 			line = line.split()
 			if len(line) > 1 and 'rs' in line[1]:
 				num_snps += 1
+	return num_snps
+
+def calculate_num_jobs(params, group_size):
+	num_snps = get_num_filtered_snps(params)
 
 	num_groups = ceil(num_snps/group_size)
 
@@ -382,7 +387,6 @@ if __name__ == '__main__':
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,
 				   'group_size': group_size,
-				   'num_jobs': num_jobs(group_size),
 				   'job_output': os.path.join(job_output_root, dataset),
 				   'condor_output': os.path.join(condor_output_root, dataset),
 				   'epistasis_script': epistasis_script,

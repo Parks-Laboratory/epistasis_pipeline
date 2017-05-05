@@ -104,7 +104,7 @@ def write_submission_file(params, flags, offset=0):
 	+wantFlocking = true
 
 	queue %(num_jobs)s
-	''').replace('\t*', '')
+	''')
 
 	params['num_jobs'] = calculate_num_jobs(params, group_size)
 
@@ -165,11 +165,11 @@ def write_shell_script(params, flags):
 	cleanup
 
 	exit 0
-	''').replace('\t*', '')
+	''')
 
 	params['debug_shell'] = ''
 	if flags['debug']:
-		params['debug_shell']='''
+		params['debug_shell'] = textwrap.dedent('''
 		echo ===================================================================
 		echo ======================= DEBUGGING OUTPUT ==========================
 		echo ===================================================================
@@ -201,7 +201,7 @@ def write_shell_script(params, flags):
 		python $tmp
 		rm $tmp
 		echo ===================================================================
-		'''.replace('\t*', '')
+		''')
 
 	exec_file = open( 'epistasis_%(dataset)s.sh' % params, 'w')
 	exec_file.write( exec_template % params )

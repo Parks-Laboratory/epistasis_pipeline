@@ -115,7 +115,8 @@ def write_submission_file(params, flags, offset=0):
 
 def write_shell_script(params, flags):
 	exec_template = textwrap.dedent(
-	'''#!/bin/bash
+	'''
+	#!/bin/bash
 
 	cleanup(){
 		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python

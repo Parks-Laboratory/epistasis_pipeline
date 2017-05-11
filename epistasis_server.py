@@ -49,12 +49,12 @@ class Tee(object):
 def timestamp():
 	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
 
-def process(params):
+def process(params, flags):
 	os.chdir(root)
 	make_output_dirs(params)
 
-	write_submission_file(params)
-	write_shell_script(params)
+	write_submission_file(params, flags)
+	write_shell_script(params, flags)
 
 	package_SQUID_files(params)
 	submit_jobs(params)
@@ -64,7 +64,7 @@ def write_submission_files(params):
 	pass
 
 
-def write_submission_file(params, offset=0):
+def write_submission_file(params, flags, offset=0):
 	'''
 	Arguments:
 	offset -- used w/ DAGMan to split up jobs
@@ -104,17 +104,19 @@ def write_submission_file(params, offset=0):
 	+wantFlocking = true
 
 	queue %(num_jobs)s
-	''').replace('\t*', '')
+	''')
+
+	params['num_jobs'] = calculate_num_jobs(params, group_size)
 
 	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
 	submit_file.close()
 
 
-def write_shell_script(params):
+def write_shell_script(params, flags):
 	exec_template = textwrap.dedent(
-	'''#!/bin/bash
-
+	'''
+	#!/bin/bash
 
 	cleanup(){
 		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
@@ -128,11 +130,6 @@ def write_shell_script(params):
 		fi
 	}
 
-	# if script fails before getting to python, make sure this file exists
-	ps aux > epistasis_node.py.output.$1
-	cat /etc/*-release >> epistasis_node.py.output.$1
-	exit_on_failure
-
 	# untar files sent along by SQUID
 	tar -xzvf %(squid_zip)s
 	exit_on_failure
@@ -145,15 +142,19 @@ def write_shell_script(params):
 	tar -xzvf %(atlas_installation)s
 	exit_on_failure
 
-	ls >> epistasis_node.py.output.$1
-
 	# make sure the script will use your Python installation
 	export PATH=$(pwd)/python/bin:$PATH
 	exit_on_failure
 
+	# tell python where the user's home directory is located
+	export PYTHONUSERBASE=.
+
 	# make sure script can find ATLAS library
 	export LD_LIBRARY_PATH=$(pwd)/atlas
 	exit_on_failure
+
+	# get debugging information immediately before running script
+	%(debug_shell)s
 
 	# run script
 	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
@@ -165,7 +166,43 @@ def write_shell_script(params):
 	cleanup
 
 	exit 0
-	''').replace('\t*', '')
+	''')
+
+	params['debug_shell'] = ''
+	if flags['debug']:
+		params['debug_shell'] = textwrap.dedent('''
+		echo ===================================================================
+		echo ======================= DEBUGGING OUTPUT ==========================
+		echo ===================================================================
+		echo "TIMESTAMP: $(date)"
+		echo "OS VERSION: $(cat /etc/*-release)"
+		echo ===================================================================
+		echo "FILES/DIRS. IN $(pwd):"
+		ls
+		echo ===================================================================
+		echo "ENVIRONMENT VARIABLES:"
+		set
+		echo ===================================================================
+		# check what programs are installed
+		if [ -x "$(command -v docker)" ]; then
+			echo 'docker installed'
+		else
+			echo 'docker not installed'
+		fi
+		echo ===================================================================
+		tmp="simplePythonTest.py"
+
+		# writes lines b/n the two "EOF" strings
+		cat > $tmp << EOF
+		x = 1
+		print('Python installation seems to work')
+		EOF
+
+		# executes script that was just written to file
+		python $tmp
+		rm $tmp
+		echo ===================================================================
+		''')
 
 	exec_file = open( 'epistasis_%(dataset)s.sh' % params, 'w')
 	exec_file.write( exec_template % params )
@@ -203,14 +240,17 @@ def submit_jobs(params):
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
-
-def num_jobs(group_size):
+def get_num_filtered_snps(params):
 	num_snps = 0
-	with open(os.path.join(dataLoc, dataset+FILTERED_DATASET+'.bim')) as file:
+	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as file:
 		for line in file.readlines():
 			line = line.split()
 			if len(line) > 1 and 'rs' in line[1]:
 				num_snps += 1
+	return num_snps
+
+def calculate_num_jobs(params, group_size):
+	num_snps = get_num_filtered_snps(params)
 
 	num_groups = ceil(num_snps/group_size)
 
@@ -250,34 +290,49 @@ if __name__ == '__main__':
 ''' % dataLoc)
 	#parser.set_usage('''%(prog)s [options] [dataset1] [dataset2] ... (runs all datasets if unspecified)
 	#PLINK-formatted genotype (*.tped, *.tfam) and alternate phenotype (*.pheno.txt) files should be placed in ''' + dataLoc)
-	parser.add_argument('dataset', metavar='dataset', nargs=1, type=str, help='dataset(s) to process')
+	parser.add_argument('dataset', metavar='dataset', nargs=1, type=str,
+			help='dataset(s) to process')
 
-	parser.add_argument('-l', '--list', dest='list_dataset', help='lists datasets to process, does not do processing',
-						default=False, action='store_true')
-	parser.add_argument('-d', '--datadir', dest='datadir', help='specifies folder to search for raw data',
-						default=dataLoc, action='store')
-	parser.add_argument('-o', '--outputdir', dest='outputdir', help='specifies output folder',
-						default=job_output_root, action='store')
-	parser.add_argument('-c', '--covar', dest='covar', help='use covariate file',
-						default=False, action='store_true')
-	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
-						default='mouse', action='store', choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
-	parser.add_argument('-m', '--memory', dest='memory', help='amount of RAM (in GB) requested per job',
-						default=8, action='store', type=int)
-	parser.add_argument('--maxthreads', dest='maxthreads', help='maximum # of threads to use',
-						default=1, action='store', choices=range(1, 17), type=int)
-	parser.add_argument('-f', '--feature-selection', dest='featsel', help='perform feature selection',
-						default=False, action='store_true')
-	parser.add_argument('-e', '--excludeByPosition', dest='exclude', help='exclude SNPs within 2Mb of tested SNP from kinship matrix construction',
-						default=False, action='store_true')
-	parser.add_argument('-n', '--numeric_phenotype_id', dest='numeric', help='convert phenotype names to numbers (for safety)',
-						nargs='?', default=0, const=1, type=int, action='store', choices=[0, 1, 2])
-	parser.add_argument('-q', '--quiet', dest='debug', help="suppress debugging output",
-						default=True, action='store_false')
-	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+', help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
-	parser.add_argument('--condition', dest='condition', help='condition on SNP {snp_id}',
-						action='store', nargs=1)
-	parser.add_argument('-g', '--group_size', type=int, help='number of snps in a group', action = 'store', default=1200)
+	parser.add_argument('-l', '--list', dest='list_dataset',
+			help='lists datasets to process, does not do processing',
+			action='store_true')
+	parser.add_argument('-d', '--datadir', dest='datadir',
+			help='specifies folder to search for raw data',
+			default=dataLoc, action='store')
+	parser.add_argument('-o', '--outputdir', dest='outputdir',
+			help='specifies output folder',
+			default=job_output_root, action='store')
+	parser.add_argument('-c', '--covar', dest='covar',
+			help='use covariate file', action='store_true')
+	parser.add_argument('-s', '--species', dest='species',
+			help='mouse or human',
+			default='mouse', action='store',
+			choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
+	parser.add_argument('-m', '--memory', dest='memory',
+			help='amount of RAM (in GB) requested per job',
+			default=8, action='store', type=int)
+	parser.add_argument('--maxthreads', dest='maxthreads',
+			help='maximum # of threads to use',
+			default=1, action='store', choices=range(1, 17), type=int)
+	parser.add_argument('-f', '--feature-selection', dest='featsel',
+			help='perform feature selection', action='store_true')
+	parser.add_argument('-e', '--excludeByPosition', dest='exclude',
+			help='exclude SNPs within 2Mb of tested SNP from kinship matrix construction',
+			action='store_true')
+	parser.add_argument('-n', '--numeric_phenotype_id', dest='numeric',
+			help='convert phenotype names to numbers (for safety)',
+			nargs='?', default=0, const=1, type=int, action='store', choices=[0, 1, 2])
+	parser.add_argument('-q', '--quiet', dest='quiet',
+			help="suppress output", action='store_true')
+	parser.add_argument('--debug',
+			help="gather debugging information from run", action='store_true')
+	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+',
+			help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
+	parser.add_argument('--condition', dest='condition',
+			help='condition on SNP {snp_id}', action='store', nargs=1)
+	parser.add_argument('-g', '--group_size', type=int,
+			help='number of snps in a group', action = 'store', default=1500)
+
 
 	args = parser.parse_args()
 
@@ -310,6 +365,10 @@ if __name__ == '__main__':
 
 	log.send_output('Searching for raw data in %s' % dataLoc)
 
+	flags = {
+		'debug': debug,
+	}
+
 	params = {}
 
 	# initiate params
@@ -329,7 +388,6 @@ if __name__ == '__main__':
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,
 				   'group_size': group_size,
-				   'num_jobs': num_jobs(group_size),
 				   'job_output': os.path.join(job_output_root, dataset),
 				   'condor_output': os.path.join(condor_output_root, dataset),
 				   'epistasis_script': epistasis_script,
@@ -348,9 +406,10 @@ if __name__ == '__main__':
 				   'condition': ['', '--condition %s' % condition][condition is not None],
 				   'use_memory': memory})
 
+
 	# maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
 	# run on cluster
-	process(params)
+	process(params, flags)
 
 	log.close()

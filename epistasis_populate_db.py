@@ -27,8 +27,9 @@ def create_table(db, table_name):
             " SNP1 varchar(20)," \
             "SNP2 varchar(20)," \
             "Trait varchar(50)," \
-            "Pvalue float" \
-            ");"
+            "Pvalue float, " \
+            "CONSTRAINT PK PRIMARY KEY (SNP1, SNP2, Trait));"
+    print(query)
     cursor.execute(query)
     cursor.commit()
     print("successfully create the table %s in database: %s" % (table_name, db))
@@ -120,11 +121,14 @@ if __name__ == '__main__':
 
                 # write errmsg if file I/O exception
                 except ValueError as ex:
-                    errmsg = "error in " + str(fileName) + "," + " row[-1] is: " + row[-1] + " type: " + str(
+                    errmsg = "Warning: error in " + str(fileName) + "," + " row[-1] is: " + row[-1] + " type: " + str(
                         type(row[-1]))
                     print(errmsg)
-                    f = open("Epistasis_{!r}_err.txt".format(table), "w")
+                    print("current row:", end="")
+                    print(row)
+                    f = open("Epistasis_{!r}_err.txt".format(table_name), "w")
                     f.write(errmsg + "\n")
+                    f.write(row)
                     f.close()
 
                 except IndexError as iex :

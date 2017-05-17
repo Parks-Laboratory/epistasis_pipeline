@@ -58,9 +58,9 @@ def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=
 	c = pyodbc.connect(SERVER=server,DATABASE=db,DRIVER='{SQL Server Native Client 11.0}',Trusted_Connection='Yes')
 	q = query_template % ', '.join(['[%s]' % x for x in strains])
 
-	t0 = time.clock()	# see how long query took
+	# t0 = time.clock()	# see how long query took
 	res = c.execute(q)
-	print('\tQuery completed in %.3f minutes' % ((time.clock()-t0)/60) )
+	# print('\tQuery completed in %.3f minutes' % ((time.clock()-t0)/60) )
 
 	tfam = 0
 	linebuffer = []

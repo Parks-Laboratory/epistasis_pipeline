@@ -75,7 +75,7 @@ def write_submission_file(params, flags, offset=0):
 	'''# Epistasis Submit File
 
 	universe = vanilla
-	requirements = (OpSysMajorVer == 6) || (OpSysMajorVer == 7)
+	requirements = (OpSysMajorVer == 6)
 
 	log = %(condor_output)s/epistasis_$(Cluster).log
 	error = %(condor_output)s/epistasis_$(Cluster)_$(Process).err

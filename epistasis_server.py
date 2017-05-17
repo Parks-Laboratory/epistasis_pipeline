@@ -72,7 +72,7 @@ def write_submission_file(params, flags, offset=0):
 
 	# submit and executable files
 	submit_template = textwrap.dedent(
-	'''# Epistasis Submit File
+	'''	# Epistasis Submit File
 
 	universe = vanilla
 	requirements = (OpSysMajorVer == 6)
@@ -115,8 +115,7 @@ def write_submission_file(params, flags, offset=0):
 
 def write_shell_script(params, flags):
 	exec_template = textwrap.dedent(
-	'''
-	#!/bin/bash
+	'''	#!/bin/bash
 
 	cleanup(){
 		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
@@ -157,11 +156,8 @@ def write_shell_script(params, flags):
 	%(debug_shell)s
 
 	# run script
-	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s
 	exit_on_failure
-
-	# Keep job output only if job FAILS (for debugging), otherwise, delete it
-	rm epistasis_node.py.output.$1
 
 	cleanup
 

@@ -383,7 +383,7 @@ if __name__ == '__main__':
 		condition = condition[0]
 
 	# check_prefixes(dataLoc, dataset)
-	squid_archive = 'epistasis.tar'
+	squid_archive = dataset + '.tar'
 	params.update({'root': root,
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,

@@ -17,7 +17,7 @@ def warn_if_overwrite(output_fn):
 	if os.path.isfile(output_fn):
 		print('\tThe file \'' + output_fn + '\' already exists, and will be overwritten in 3 seconds (press Ctrl + C to prevent overwrite)')
 		time.sleep(3)
-		
+
 def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=None, posCol=None, iids=None, output_dir=None):
 	'''
 	Arguments:
@@ -58,9 +58,9 @@ def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=
 	c = pyodbc.connect(SERVER=server,DATABASE=db,DRIVER='{SQL Server Native Client 11.0}',Trusted_Connection='Yes')
 	q = query_template % ', '.join(['[%s]' % x for x in strains])
 
-	t0 = time.clock()	# see how long query took
+	# t0 = time.clock()	# see how long query took
 	res = c.execute(q)
-	print('\tQuery completed in %.3f minutes' % ((time.clock()-t0)/60) )
+	# print('\tQuery completed in %.3f minutes' % ((time.clock()-t0)/60) )
 
 	tfam = 0
 	linebuffer = []
@@ -78,6 +78,7 @@ def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=
 			# accesses list of strains by referring to view's column names
 			for i, fid in enumerate(colnames[4:]):
 				if iids is None:
+					# PLINK requires IID to be > 0
 					iid = (i+1)
 				else:
 					iid = iids[i].replace('/', '.').replace(' ', '.')

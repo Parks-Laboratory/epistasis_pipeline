@@ -72,10 +72,10 @@ def write_submission_file(params, flags, offset=0):
 
 	# submit and executable files
 	submit_template = textwrap.dedent(
-	'''# Epistasis Submit File
+	'''	# Epistasis Submit File
 
 	universe = vanilla
-	requirements = (OpSysMajorVer == 6) || (OpSysMajorVer == 7)
+	requirements = (OpSysMajorVer == 6)
 
 	log = %(condor_output)s/epistasis_$(Cluster).log
 	error = %(condor_output)s/epistasis_$(Cluster)_$(Process).err
@@ -115,8 +115,7 @@ def write_submission_file(params, flags, offset=0):
 
 def write_shell_script(params, flags):
 	exec_template = textwrap.dedent(
-	'''
-	#!/bin/bash
+	'''	#!/bin/bash
 
 	cleanup(){
 		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
@@ -147,7 +146,7 @@ def write_shell_script(params, flags):
 	exit_on_failure
 
 	# tell python where the user's home directory is located
-	export PYTHONUSERBASE=.
+	export PYTHONUSERBASE=$(pwd)
 
 	# make sure script can find ATLAS library
 	export LD_LIBRARY_PATH=$(pwd)/atlas
@@ -157,11 +156,8 @@ def write_shell_script(params, flags):
 	%(debug_shell)s
 
 	# run script
-	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s &>> epistasis_node.py.output.$1
+	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s
 	exit_on_failure
-
-	# Keep job output only if job FAILS (for debugging), otherwise, delete it
-	rm epistasis_node.py.output.$1
 
 	cleanup
 
@@ -383,7 +379,7 @@ if __name__ == '__main__':
 		condition = condition[0]
 
 	# check_prefixes(dataLoc, dataset)
-	squid_archive = 'epistasis.tar'
+	squid_archive = dataset + '.tar'
 	params.update({'root': root,
 				   'dataLoc': dataLoc,
 				   'dataset': dataset,

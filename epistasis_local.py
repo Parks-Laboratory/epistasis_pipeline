@@ -58,8 +58,8 @@ parser.add_argument('--maf', action='store', default = 0.05)
 parser.add_argument('--geno', action='store', default = 0.1)
 parser.add_argument('--covar', action='store_true', default=False)
 '''
---genotype: select to run get genotype 
---plink: select to run plink command 
+--genotype: select to run get genotype
+--plink: select to run plink command
 --check: select to run check IID/FID
 --hold: hold the ouput file to the current directory
 '''
@@ -100,8 +100,8 @@ header = "\t".join(header)
 strains =  ([x.split('\t')[0] for x in open(input_file).readlines()][1:])
 pheno_strains = [strain.replace('/', '.').replace(' ', '.') for strain in strains]
 
-for x in open(input_file).readlines()[1:]:
-   print ( "%s"%((x)))
+# for x in open(input_file).readlines()[1:]:
+#    print ( "%s"%((x)))
 
 traits = []
 if(suffix == ".pheno.txt"):
@@ -126,7 +126,6 @@ for i in range(1, len(strains)):
     #f.write("\n")
 f.close()
 print("fixed pheno and generated .pheno.txt file")
-exit(2)
 
 if(suffix == ".covar.txt"):
     header =  ["FID", "IID", last_column]
@@ -142,7 +141,6 @@ if(suffix == ".covar.txt"):
             f.write(covar_col[i])
 f.close()
 print("generated .covar.txt file")
-exit(2)
 ''''
 Call get_genotypes to get the .tped and .tfam file
 '''

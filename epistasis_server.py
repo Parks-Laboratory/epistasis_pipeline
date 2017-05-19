@@ -99,9 +99,10 @@ def write_submission_file(params, flags, offset=0):
 	# set number of times to re-run a job if script returns non-zero exit code
 	max_retries=3
 
-	# requirements = (Target.PoolName =!= "CHTC")
-	+wantGlidein = true
-	+wantFlocking = true
+	# specify which computing pools should be used
+	%(use_chtc)s
+	%(use_osg)s
+	%(use_uw)s
 
 	queue %(num_jobs)s
 	''')
@@ -290,44 +291,47 @@ if __name__ == '__main__':
 			help='dataset(s) to process')
 
 	parser.add_argument('-l', '--list', dest='list_dataset',
-			help='lists datasets to process, does not do processing',
-			action='store_true')
+		help='lists datasets to process, does not do processing',
+		action='store_true')
 	parser.add_argument('-d', '--datadir', dest='datadir',
-			help='specifies folder to search for raw data',
-			default=dataLoc, action='store')
+		help='specifies folder to search for raw data',
+		default=dataLoc, action='store')
 	parser.add_argument('-o', '--outputdir', dest='outputdir',
-			help='specifies output folder',
-			default=job_output_root, action='store')
+		help='specifies output folder',
+		default=job_output_root, action='store')
 	parser.add_argument('-c', '--covar', dest='covar',
-			help='use covariate file', action='store_true')
+		help='use covariate file', action='store_true')
 	parser.add_argument('-s', '--species', dest='species',
-			help='mouse or human',
-			default='mouse', action='store',
-			choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
+		help='mouse or human',
+		default='mouse', action='store',
+		choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
 	parser.add_argument('-m', '--memory', dest='memory',
-			help='amount of RAM (in GB) requested per job',
-			default=8, action='store', type=int)
+		help='amount of RAM (in GB) requested per job',
+		default=8, action='store', type=int)
 	parser.add_argument('--maxthreads', dest='maxthreads',
-			help='maximum # of threads to use',
-			default=1, action='store', choices=range(1, 17), type=int)
+		help='maximum # of threads to use',
+		default=1, action='store', choices=range(1, 17), type=int)
+	parser.add_argument('-p', '--pools', dest='pools',
+		help='select from: chtc, osg, uw. E.g. -p chtc osg, to run on CHTC and OSG',
+		default=['chtc','osg','uw'], choices=['chtc','osg','uw'], nargs='*')
 	parser.add_argument('-f', '--feature-selection', dest='featsel',
-			help='perform feature selection', action='store_true')
+		help='perform feature selection', action='store_true')
 	parser.add_argument('-e', '--excludeByPosition', dest='exclude',
-			help='exclude SNPs within 2Mb of tested SNP from kinship matrix construction',
-			action='store_true')
+		help='exclude SNPs within 2Mb of tested SNP from kinship matrix construction',
+		action='store_true')
 	parser.add_argument('-n', '--numeric_phenotype_id', dest='numeric',
-			help='convert phenotype names to numbers (for safety)',
-			nargs='?', default=0, const=1, type=int, action='store', choices=[0, 1, 2])
+		help='convert phenotype names to numbers (for safety)',
+		nargs='?', default=0, const=1, type=int, action='store', choices=[0, 1, 2])
 	parser.add_argument('-q', '--quiet', dest='quiet',
-			help="suppress output", action='store_true')
+		help="suppress output", action='store_true')
 	parser.add_argument('--debug',
-			help="gather debugging information from run", action='store_true')
+		help="gather debugging information from run", action='store_true')
 	parser.add_argument('--tasks', dest='tasks', metavar='TASK', nargs='+',
-			help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
+		help='run only specified sub-tasks (specify only one dataset when using this option)', type=int)
 	parser.add_argument('--condition', dest='condition',
-			help='condition on SNP {snp_id}', action='store', nargs=1)
+		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
-			help='number of snps in a group', action = 'store', default=1500)
+		help='number of snps in a group', action = 'store', default=1500)
 
 
 	args = parser.parse_args()
@@ -339,6 +343,7 @@ if __name__ == '__main__':
 	list_data = args.list_dataset
 	covar = args.covar
 	memory = args.memory
+	pools = args.pools
 	numeric = args.numeric
 	species = args.species.lower()
 	maxthreads = args.maxthreads
@@ -380,27 +385,32 @@ if __name__ == '__main__':
 
 	# check_prefixes(dataLoc, dataset)
 	squid_archive = dataset + '.tar'
-	params.update({'root': root,
-				   'dataLoc': dataLoc,
-				   'dataset': dataset,
-				   'group_size': group_size,
-				   'job_output': os.path.join(job_output_root, dataset),
-				   'condor_output': os.path.join(condor_output_root, dataset),
-				   'epistasis_script': epistasis_script,
-				   'squid_archive': squid_archive,
-				   'squid_zip': squid_archive + '.gz',
-				   'username': pwd.getpwuid(os.getuid()).pw_name,
-				   'python_installation': 'python.tar.gz',
-				   'atlas_installation': 'atlas.tar.gz',
-				   'debug': ['', '--debug'][debug],
-				   'prog_path':prog_path,
-				   'timestamp':datetime.ctime(datetime.now()),
-				   'species': '-s %s' % species,
-				   'maxthreads':'--maxthreads %s' % maxthreads,
-				   'feature_selection':['', '--feature-selection'][featsel],
-				   'exclude':['', '--exclude'][exclude],
-				   'condition': ['', '--condition %s' % condition][condition is not None],
-				   'use_memory': memory})
+	params.update({
+		'root': root,
+		'dataLoc': dataLoc,
+		'dataset': dataset,
+		'group_size': group_size,
+		'job_output': os.path.join(job_output_root, dataset),
+		'condor_output': os.path.join(condor_output_root, dataset),
+		'epistasis_script': epistasis_script,
+		'squid_archive': squid_archive,
+		'squid_zip': squid_archive + '.gz',
+		'username': pwd.getpwuid(os.getuid()).pw_name,
+		'python_installation': 'python.tar.gz',
+		'atlas_installation': 'atlas.tar.gz',
+		'debug': ['', '--debug'][debug],
+		'prog_path':prog_path,
+		'timestamp':datetime.ctime(datetime.now()),
+		'species': '-s %s' % species,
+		'maxthreads':'--maxthreads %s' % maxthreads,
+		'feature_selection':['', '--feature-selection'][featsel],
+		'exclude':['', '--exclude'][exclude],
+		'condition': ['', '--condition %s' % condition][condition is not None],
+		'use_memory': memory,
+		'use_chtc': ['requirements = (Target.PoolName =!= "CHTC")', '']['chtc' in pools],
+		'use_osg': ['', '+wantGlidein = true']['osg' in pools],
+		'use_uw': ['', '+wantFlocking = true']['uw' in pools],
+	})
 
 
 	# maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]

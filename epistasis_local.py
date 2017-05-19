@@ -94,17 +94,27 @@ with open(input_file) as f:
     traits = f.readline().split("\t")
     last_column =traits[-1]
 suffix = ".covar.txt" if (last_column.strip() == 'Covar') else ".pheno.txt"
-header = ["FID", "IID", "\t".join(traits[2:])] if (suffix == ".pheno.txt") else ["FID", "IID", "\t".join(traits[2: -1])]
+header = ["FID", "IID", "\t".join(traits[2:])] if (suffix == ".pheno.txt") else ["FID", "IID", "\t".join(traits[2: -1]), "\n"]
 header = "\t".join(header)
 # print(header)
 strains =  ([x.split('\t')[0] for x in open(input_file).readlines()][1:])
 pheno_strains = [strain.replace('/', '.').replace(' ', '.') for strain in strains]
-traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:]) if(suffix == ".pheno.txt") else ([x.split('\t')[2:-1] for x in open(input_file).readlines()][1:])
 
+for x in open(input_file).readlines()[1:]:
+   print ( "%s"%((x)))
+
+traits = []
+if(suffix == ".pheno.txt"):
+    traits = ([x.split('\t')[2:] for x in open(input_file).readlines()][1:])
+else:
+    for x in open(input_file).readlines()[1:]:
+        l = x.split('\t')[2:-1]
+        l.append("\n")
+        traits.append(l)
 # fixphenos and write to %s.pheno.txt %pheno_prefix
 f = open(prefix + ".pheno.txt", "w")
 f.write(header)
-for i in range(0, len(strains)):
+for i in range(1, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
     # replace " " with "\."
     pheno_strains[i] = convert_missing_value (pheno_strains[i])
@@ -112,25 +122,27 @@ for i in range(0, len(strains)):
         trait = convert_missing_value (trait)
     f.write( pheno_strains[i] + "\t")
     f.write( str(i) + "\t")
-    f.write( ".\t".join(traits[i]))
+    f.write( "\t".join(traits[i]))
     #f.write("\n")
 f.close()
 print("fixed pheno and generated .pheno.txt file")
+exit(2)
+
 if(suffix == ".covar.txt"):
     header =  ["FID", "IID", last_column]
     header = "\t".join(header)
-   # print("covar header:" + header)
+    # print("covar header:" + header)
     covar_col = ([x.split('\t')[-1] for x in open(input_file).readlines()][1:])
     with open(prefix + ".covar.txt", "w") as f:
         f.write(header)
-        for i in range(0, len(strains)):
+        for i in range(1, len(strains)):
             pheno_strains[i] = convert_missing_value(pheno_strains[i])
             f.write(pheno_strains[i] + "\t")
             f.write(str(i) + "\t")
             f.write(covar_col[i])
 f.close()
 print("generated .covar.txt file")
-
+exit(2)
 ''''
 Call get_genotypes to get the .tped and .tfam file
 '''

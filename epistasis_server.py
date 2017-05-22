@@ -135,15 +135,15 @@ def write_shell_script(params, flags):
 	}
 
 	# untar files sent along by SQUID
-	tar -xzvf %(squid_zip)s
+	tar -xzvf %(squid_zip)s | head -50
 	exit_on_failure
 
 	# untar Python installation
-	tar -xzvf %(python_installation)s
+	tar -xzvf %(python_installation)s | head
 	exit_on_failure
 
 	# untar ATLAS linear algebra library
-	tar -xzvf %(atlas_installation)s
+	tar -xzvf %(atlas_installation)s | head
 	exit_on_failure
 
 	# make sure the script will use your Python installation

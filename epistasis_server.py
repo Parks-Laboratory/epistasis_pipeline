@@ -93,8 +93,11 @@ def write_submission_file(params, flags, offset=0):
 	request_memory = %(use_memory)sGB
 	request_disk = 2GB
 
-	# set the interval for releasing the job if Condor puts it on hold
-	periodic_release = (CurrentTime - EnteredCurrentStatus > 600)
+	# if Condor puts job on hold, retry every 5 minutes, up to 4 times
+	periodic_release = ( NumSystemHolds <= ((NumGlobusSubmits * 4) + 4) ) \
+		&& (NumGlobusSubmits < 4) && \
+		( HoldReason != "via condor_hold (by user $ENV(USER))" ) && \
+		((time() - EnteredCurrentStatus) > ( NumSystemHolds *60*5 ))
 
 	# set number of times to re-run a job if script returns non-zero exit code
 	max_retries=3

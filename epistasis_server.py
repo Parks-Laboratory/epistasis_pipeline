@@ -29,7 +29,6 @@ job_output_root = os.path.join(root, 'results')
 
 # script locations
 prog_path = os.path.join(root, 'scripts')
-epistasis_script = os.path.join(prog_path, 'epistasis_node.py')
 
 # filename formats
 FULL_DATASET = '.FULL'
@@ -49,9 +48,14 @@ class Tee(object):
 def timestamp():
 	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
 
-def process(params, flags):
+def run(params, flags):
 	os.chdir(root)
 	make_output_dirs(params)
+
+	if params['jobs_to_run_filename']:
+		params['num_jobs'] = get_num_jobs_to_rerun(params)
+	else:
+		params['num_jobs'] = calculate_num_jobs(params, params['group_size'])
 
 	write_submission_file(params, flags)
 	write_shell_script(params, flags)
@@ -59,12 +63,11 @@ def process(params, flags):
 	package_SQUID_files(params)
 	submit_jobs(params)
 
-
 def write_submission_files(params):
 	pass
 
 
-def write_submission_file(params, flags, offset=0):
+def write_submission_file(params, flags):
 	'''
 	Arguments:
 	offset -- used w/ DAGMan to split up jobs
@@ -81,8 +84,8 @@ def write_submission_file(params, flags, offset=0):
 	error = %(condor_output)s/epistasis_$(Cluster)_$(Process).err
 
 	InitialDir = %(root)s/results/%(dataset)s
-	executable = %(root)s/epistasis_%(dataset)s.sh
-	arguments = $(Process)
+	executable = %(root)s/%(executable_filename)s
+	arguments = $(Process) %(offset)s
 	output = %(condor_output)s/epistasis_$(Cluster)_$(Process).out
 
 	should_transfer_files = YES
@@ -110,9 +113,7 @@ def write_submission_file(params, flags, offset=0):
 	queue %(num_jobs)s
 	''')
 
-	params['num_jobs'] = calculate_num_jobs(params, group_size)
-
-	submit_file = open( 'epistasis_%(dataset)s.sub' % params, 'w')
+	submit_file = open( params['submit_filename'], 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
 	submit_file.close()
 
@@ -160,13 +161,20 @@ def write_shell_script(params, flags):
 	%(debug_shell)s
 
 	# run script
-	python epistasis_node.py %(dataset)s %(group_size)s $1 %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s
+	python epistasis_node.py %(dataset)s %(group_size)s %(job_number)s %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s
 	exit_on_failure
+
+	echo Process $1 (job %(job_number)s) generated gwas $(ls *gwas)
 
 	cleanup
 
 	exit 0
 	''')
+
+	if params['jobs_to_run_filename']:
+		params['job_number'] = '$(sed -n "$(( $1 + 1 ))"p %(jobs_to_run_filename)s)' % params
+	else:
+		params['job_number'] = '$(( $1 + $2 ))'
 
 	params['debug_shell'] = ''
 	if flags['debug']:
@@ -204,12 +212,12 @@ def write_shell_script(params, flags):
 		echo ===================================================================
 		''')
 
-	exec_file = open( 'epistasis_%(dataset)s.sh' % params, 'w')
+	exec_file = open( params['executable_filename'], 'w')
 	exec_file.write( exec_template % params )
 	exec_file.close()
 
 	# give script permission to execute
-	subprocess.call('chmod +x epistasis_%(dataset)s.sh' % params, shell = True)
+	subprocess.call('chmod +x %(executable_filename)s' % params, shell = True)
 
 
 def make_output_dirs(params):
@@ -235,15 +243,23 @@ def package_SQUID_files(params):
 
 def submit_jobs(params):
 	# submit jobs to condor
-	condor_cluster = subprocess.Popen(['condor_submit', 'epistasis_%(dataset)s.sub' % params], stdout=subprocess.PIPE).communicate()[0]
+	condor_cluster = subprocess.Popen(['condor_submit', params['submit_filename'] ], stdout=subprocess.PIPE).communicate()[0]
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 
+def get_num_jobs_to_rerun(params):
+	num_jobs = 0
+	with open(os.path.join(params['dataLoc'], params['jobs_to_run_filename'])) as f:
+		for line in f.readlines():
+			int(line.strip())	# raise exception if non-integer found
+			num_jobs += 1
+		return num_jobs
+
 def get_num_filtered_snps(params):
 	num_snps = 0
-	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as file:
-		for line in file.readlines():
+	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as f:
+		for line in f.readlines():
 			line = line.split()
 			if len(line) > 1 and 'rs' in line[1]:
 				num_snps += 1
@@ -335,6 +351,8 @@ if __name__ == '__main__':
 		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
 		help='number of snps in a group', action = 'store', default=1500)
+	parser.add_argument('--rerun', dest='jobs_to_run_filename',
+		help='file name containing list of process/job numbers to run', action = 'store')
 
 
 	args = parser.parse_args()
@@ -356,6 +374,8 @@ if __name__ == '__main__':
 	tasks = args.tasks
 	condition = args.condition
 	group_size = args.group_size
+	jobs_to_run_filename = args.jobs_to_run_filename
+
 
 	if debug:
 		log = Tee('epistasis_pipeline-%s.log' % timestamp())
@@ -393,14 +413,17 @@ if __name__ == '__main__':
 		'dataLoc': dataLoc,
 		'dataset': dataset,
 		'group_size': group_size,
+		'offset': 0,
 		'job_output': os.path.join(job_output_root, dataset),
 		'condor_output': os.path.join(condor_output_root, dataset),
-		'epistasis_script': epistasis_script,
 		'squid_archive': squid_archive,
 		'squid_zip': squid_archive + '.gz',
 		'username': pwd.getpwuid(os.getuid()).pw_name,
 		'python_installation': 'python.tar.gz',
 		'atlas_installation': 'atlas.tar.gz',
+		'executable_filename' : 'epistasis_%s.sh' % dataset,
+		'submit_filename': 'epistasis_%s.sub' % dataset,
+		'jobs_to_run_filename': jobs_to_run_filename,
 		'debug': ['', '--debug'][debug],
 		'prog_path':prog_path,
 		'timestamp':datetime.ctime(datetime.now()),
@@ -418,7 +441,6 @@ if __name__ == '__main__':
 
 	# maxthreads_option = ['', '-pe shared %s' % maxthreads][maxthreads > 1]
 
-	# run on cluster
-	process(params, flags)
+	run(params, flags)
 
 	log.close()

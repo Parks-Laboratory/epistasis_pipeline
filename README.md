@@ -5,7 +5,7 @@
 
 	Strain	Sex	_trait_ 	Covar
 	
-Note: the "Covar" column is optional
+	Note: the "Covar" column is optional
 
 1. `python epistasis_local.py <name of input file> [--maf] [--geno] [--genotype] [--plink] [--check] [--hold]`
 	* --maf, --geno specifies the maf and geno threshold

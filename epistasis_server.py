@@ -52,7 +52,7 @@ def run(params, flags):
 	os.chdir(root)
 	make_output_dirs(params)
 
-	if params['jobs_to_run_filename']:
+	if params['jobs_to_rerun_filename']:
 		params['num_jobs'] = get_num_jobs_to_rerun(params)
 	else:
 		params['num_jobs'] = calculate_num_jobs(params, params['group_size'])
@@ -123,7 +123,7 @@ def write_shell_script(params, flags):
 	'''	#!/bin/bash
 
 	cleanup(){
-		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python %(jobs_to_run_filename)s
+		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python %(jobs_to_rerun_filename)s
 	}
 
 	exit_on_failure(){
@@ -174,8 +174,8 @@ def write_shell_script(params, flags):
 	exit 0
 	''')
 
-	if params['jobs_to_run_filename']:
-		params['job_number'] = '$(sed -n "$(( $1 + 1 ))"p %(jobs_to_run_filename)s)' % params
+	if params['jobs_to_rerun_filename']:
+		params['job_number'] = '$(sed -n "$(( $1 + 1 ))"p %(jobs_to_rerun_filename)s)' % params
 	else:
 		params['job_number'] = '$(( $1 + $2 ))'
 
@@ -253,7 +253,7 @@ def submit_jobs(params):
 
 def get_num_jobs_to_rerun(params):
 	num_jobs = 0
-	with open(os.path.join(params['dataLoc'], params['jobs_to_run_filename'])) as f:
+	with open(os.path.join(params['dataLoc'], params['jobs_to_rerun_filename'])) as f:
 		for line in f.readlines():
 			try:
 				int(line.strip())	# raise exception if non-integer found
@@ -357,7 +357,7 @@ if __name__ == '__main__':
 		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
 		help='number of snps in a group', action = 'store', default=1500)
-	parser.add_argument('--rerun', dest='jobs_to_run_filename',
+	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default=''
 		help='file name containing list of process/job numbers to run', action = 'store')
 
 
@@ -380,7 +380,7 @@ if __name__ == '__main__':
 	tasks = args.tasks
 	condition = args.condition
 	group_size = args.group_size
-	jobs_to_run_filename = args.jobs_to_run_filename
+	jobs_to_rerun_filename = args.jobs_to_rerun_filename
 
 
 	if debug:
@@ -429,7 +429,7 @@ if __name__ == '__main__':
 		'atlas_installation': 'atlas.tar.gz',
 		'executable_filename' : 'epistasis_%s.sh' % dataset,
 		'submit_filename': 'epistasis_%s.sub' % dataset,
-		'jobs_to_run_filename': jobs_to_run_filename,
+		'jobs_to_rerun_filename': jobs_to_rerun_filename,
 		'debug': ['', '--debug'][debug],
 		'prog_path':prog_path,
 		'timestamp':datetime.ctime(datetime.now()),

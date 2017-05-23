@@ -14,13 +14,13 @@ import argparse
 
 defaults = {
 	'HMDP': {
-		'view': '[dbo].[genotype_calls_plink_format]',
+		'table': '[dbo].[genotype_calls_plink_format]',
 		'idCol': 'rsID',
 		'posCol': 'snp_bp_mm10',
 		'chrCol': 'snp_chr',
 	},
 	'DO': {
-		'view': '',
+		'table': '',
 		'idCol': 'snp_id',
 		'posCol': 'snp_bp_mm10',
 		'chrCol': 'snp_chr',
@@ -33,7 +33,7 @@ def warn_if_overwrite(output_fn):
 		print('\tThe file \'' + output_fn + '\' already exists, and will be overwritten in 3 seconds (press Ctrl + C to prevent overwrite)')
 		time.sleep(3)
 
-def get_genotypes(strains, output_fn, db, view=None, server=None, idCol=None, chrCol=None, posCol=None, iids=None, output_dir=None):
+def get_genotypes(strains, output_fn, db, table=None, server=None, idCol=None, chrCol=None, posCol=None, iids=None, output_dir=None):
 	'''
 	Arguments:
 	strains -- list of strain names
@@ -41,15 +41,15 @@ def get_genotypes(strains, output_fn, db, view=None, server=None, idCol=None, ch
 	output_fn -- prefix for generated .tped, .tfam files
 	output_dir -- location where .tped, .tfam files should be placed.
 	db -- SQL database
-	view -- SQL view containing genotypes
+	table -- SQL table containing genotypes
 	server -- SQL server
-	idCol -- column in view containing marker identifiers (e.g. rsID)
-	chrCol -- column in view containing marker chromosome labels (e.g. snp_chr)
-	posCol -- column in view containing marker genetic distance (e.g. snp_bp_mm10)
+	idCol -- column in table containing marker identifiers (e.g. rsID)
+	chrCol -- column in table containing marker chromosome labels (e.g. snp_chr)
+	posCol -- column in table containing marker genetic distance (e.g. snp_bp_mm10)
 	'''
 
-	if view is None:
-		view=defaults[db]['view']
+	if table is None:
+		table=defaults[db]['table']
 	if server is None:
 		server='PARKSLAB'
 	if idCol is None:
@@ -64,7 +64,7 @@ def get_genotypes(strains, output_fn, db, view=None, server=None, idCol=None, ch
 		os.mkdir(output_dir)
 
 	query_template = 'select ' + chrCol +','+ idCol +', 0 AS centimorgans,'+ posCol + ', %s ' +\
-	'from ' + db +'.'+ view +\
+	'from ' + db +'.'+ table +\
 	'order by ' + chrCol +','+ posCol
 
 	# warn_if_overwrite(output_fn)
@@ -93,7 +93,7 @@ def get_genotypes(strains, output_fn, db, view=None, server=None, idCol=None, ch
 			tfam_output_path = output_path.replace('.tped', '.tfam')
 			# warn_if_overwrite(tfam_output_path)
 			tfam_outfile = open(tfam_output_path, 'w')
-			# accesses list of strains by referring to view's column names
+			# accesses list of strains by referring to table's column names
 			for i, fid in enumerate(colnames[4:]):
 				if iids is None:
 					# PLINK requires IID to be > 0
@@ -122,28 +122,28 @@ def get_genotypes(strains, output_fn, db, view=None, server=None, idCol=None, ch
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='''Given a (tab-separated) input file
 		containing a column of strains and (optionally) a column of IDs,
-		query an SQL view for PLINK-formatted
+		query an SQL table for PLINK-formatted
 		genotype data for only the strains specified, and
-		use this data to write .tped and .tfam files. (See plink_view.sql for format of SQL view)''')
+		use this data to write .tped and .tfam files. (See plink_table.sql for format of SQL table)''')
 
 	parser.add_argument(dest='strains', action='append',
 		help='file w/ tab-separated format: [strains column] [IDs columns (optional)]')
 	parser.add_argument(dest='db',
-		help='SQL database containing genotype view (e.g. HMDP)')
+		help='SQL database containing genotype table (e.g. HMDP)')
 
-	parser.add_argument('-view',
-		help='SQL view containing genotypes for strains \
+	parser.add_argument('-table',
+		help='SQL table containing genotypes for strains \
 		in PLINK format (e.g. [dbo].[genotype_calls_plink_format])')
 	parser.add_argument('-output_dir', required=False,
 		help='directory in which to store results.')
 	parser.add_argument('-server', required=False,
 		help='SQL server containing genotype database (e.g. PARKSLAB)')
 	parser.add_argument('-idCol', required=False,
-		help='column in view containing marker identifiers (e.g. rsID)')
+		help='column in table containing marker identifiers (e.g. rsID)')
 	parser.add_argument('-chrCol', required=False,
-		help='column in view containing marker chromosome labels (e.g. snp_chr)')
+		help='column in table containing marker chromosome labels (e.g. snp_chr)')
 	parser.add_argument('-posCol', required=False,
-		help='column in view containing marker genetic distance (e.g. snp_bp_mm10)')
+		help='column in table containing marker genetic distance (e.g. snp_bp_mm10)')
 	args = parser.parse_args()
 	for filename in args.strains:
 		# print ('\tBuilding PLINK inputs from', filename)
@@ -164,4 +164,4 @@ if __name__ == '__main__':
 			for x in lines:
 				strains.append(''.join(x))
 
-		get_genotypes(strains=strains, output_fn=os.path.splitext(filename)[0], db=args.db, view=args.view, server=args.server, idCol=args.idCol, chrCol=args.chrCol, posCol=args.posCol, iids=iids, output_dir=args.output_dir)
+		get_genotypes(strains=strains, output_fn=os.path.splitext(filename)[0], db=args.db, table=args.table, server=args.server, idCol=args.idCol, chrCol=args.chrCol, posCol=args.posCol, iids=iids, output_dir=args.output_dir)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Runs Plink, Generates Submit Files and Processes Inputs/Outputs to Cluster
+Generates Submit Files and Processes Inputs/Outputs to Cluster
 """
 from __future__ import division
 import sys

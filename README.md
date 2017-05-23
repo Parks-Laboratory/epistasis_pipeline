@@ -7,8 +7,8 @@
 	* **--plink specifies ONLY run plink on existing _prefix_.tped and _prefix_.tfam files and generate _prefix_.FILTERED(FULL).bim/bed/fam**
 	* **--check specifies ONLY check fids and iids match across generated files**
 	* **--hold specifies not transfer required files to ./data/ folder**
-## Step 2: Preparing files for transfer, submit jobs (epistasis_server.py)
-1. scp **data/**, **scripts/**, **epistasis_server.py** to submit server
+## Step 2: Preparing files for transfer, submit jobs (epistasis_submit.py)
+1. scp **data/**, **scripts/**, **epistasis_submit.py** to submit server
 	* **data/** contains 
 		**_prefix_.FILTERED.bim**, 
 		**_prefix_.FILTERED.bed**, 
@@ -21,7 +21,7 @@
 		**python.tar.gz** (portable Python 2.7 installation), 
 		**atlas.tar.gz** (ATLAS library), and 	
 		**epistasis_node.py**
-2. `python epistasis_server.py <prefix> [options]`
+2. `python epistasis_submit.py <prefix> [options]`
 	Use `ls results/<prefix> | wc -l` to check the current returned file numbers
 3. run the following command on local machine: `scp -r <CONDOR_ADDRESS>:results <destination_directory_at_Parks_Lab>`
 

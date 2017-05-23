@@ -135,14 +135,17 @@ def write_shell_script(params, flags):
 	}
 
 	# untar files sent along by SQUID
+	echo "UNTARRING SQUID FILE:"
 	tar -xzvf %(squid_zip)s | head -50
 	exit_on_failure
 
 	# untar Python installation
+	echo "UNTARRING PYTHON INSTALLATION:"
 	tar -xzvf %(python_installation)s | head
 	exit_on_failure
 
 	# untar ATLAS linear algebra library
+	echo "UNTARRING ATLAS LIBRARY:"
 	tar -xzvf %(atlas_installation)s | head
 	exit_on_failure
 
@@ -164,7 +167,7 @@ def write_shell_script(params, flags):
 	python epistasis_node.py %(dataset)s %(group_size)s %(job_number)s %(covFile)s %(debug)s %(species)s %(maxthreads)s %(feature_selection)s %(exclude)s %(condition)s
 	exit_on_failure
 
-	echo Process $1 (job %(job_number)s) generated gwas $(ls *gwas)
+	echo "Process $1 (job %(job_number)s) generated gwas $(ls *gwas)"
 
 	cleanup
 

@@ -145,8 +145,7 @@ print("generated .covar.txt file")
 Call get_genotypes to get the .tped and .tfam file
 '''
 if  genotypes:
-    get_genotypes(strains , output_fn= prefix, output_dir= "", db= "HMDP",
-               table="[dbo].[genotype_calls_plink_format]")
+    get_genotypes(strains, output_fn= prefix, db= "HMDP")
 
 print("generated  .tped and .tfam file using get_genotypes")
 

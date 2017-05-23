@@ -255,7 +255,10 @@ def get_num_jobs_to_rerun(params):
 	num_jobs = 0
 	with open(os.path.join(params['dataLoc'], params['jobs_to_run_filename'])) as f:
 		for line in f.readlines():
-			int(line.strip())	# raise exception if non-integer found
+			try:
+				int(line.strip())	# raise exception if non-integer found
+			except Exception as e:
+				break;
 			num_jobs += 1
 		return num_jobs
 

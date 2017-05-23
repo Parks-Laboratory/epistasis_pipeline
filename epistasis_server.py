@@ -123,7 +123,7 @@ def write_shell_script(params, flags):
 	'''	#!/bin/bash
 
 	cleanup(){
-		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python
+		rm -r -f *.bed *.bim *.fam *.py *.pyc *.tar.gz *.txt python %(jobs_to_run_filename)s
 	}
 
 	exit_on_failure(){

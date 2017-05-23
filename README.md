@@ -37,19 +37,20 @@
 If memory requirements are set too low, it can happen that some jobs will fail while most jobs will complete successfully. In these cases, it is ideal to request more memory and re-run only the failed jobs rather than re-running all the jobs. 
 
 ### Procedure
-To do this, get the job numbers for the jobs that need to be re-run. Create a file in the **data/** directory with one job number per line:
+1. Get the job numbers for the jobs that need to be re-run. 
+1. Create a file in the **data/** directory with one job number per line:
 
-```
-8605
-8689
-8707
-8805
-8810
-8836
-8840
-```
+	```
+	8605
+	8689
+	8707
+	8805
+	8810
+	8836
+	8840
+	```
 
-Then, call **epistasis_server.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
+1. Call **epistasis_server.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
 
 ### Regarding naming of files from rerun jobs
 The .out and .err files stored under condor_out will have a different cluster number than the original run, and their job/process numbers will start again at 0, but the .gwas files will be labeled with the appropriate job numbers from the file specified by the --rerun flag.

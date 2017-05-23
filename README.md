@@ -3,7 +3,9 @@
 ## Step 1: Filtering markers, making pheno file (epistasis_local.py)
 1. Manually generate input file with one row per individual, and the following tab-separated columns:
 
-	Strain	Sex	_trait_1_	_trait_2_ ... _trait_n_ 	Covar
+	Strain	Sex	_trait_ 	Covar
+	
+	Note: the "Covar" column is optional
 
 1. `python epistasis_local.py <name of input file> [--maf] [--geno] [--genotype] [--plink] [--check] [--hold]`
 	* --maf, --geno specifies the maf and geno threshold
@@ -50,7 +52,7 @@ If memory requirements are set too low, it can happen that some jobs will fail w
 	8840
 	```
 
-1. Call **epistasis_server.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
+1. Call **epistasis_submit.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
 
 ### Regarding naming of files from rerun jobs
 The .out and .err files stored under condor_out will have a different cluster number than the original run, and their job/process numbers will start again at 0, but the .gwas files will be labeled with the appropriate job numbers from the file specified by the --rerun flag. Therefore, if all re-run jobs complete successfully, these .gwas files can be put in the same directory as the .gwas files from the original run, and the directory will contain a complete set of results with consistent file names.

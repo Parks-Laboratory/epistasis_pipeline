@@ -12,13 +12,28 @@ import sys
 import time
 import argparse
 
+defaults = {
+	'HMDP': {
+		'view': '[dbo].[genotype_calls_plink_format]',
+		'idCol': 'rsID',
+		'posCol': 'snp_bp_mm10',
+		'chrCol': 'snp_chr',
+	},
+	'DO': {
+		'view': '',
+		'idCol': 'snp_id',
+		'posCol': 'snp_bp_mm10',
+		'chrCol': 'snp_chr',
+	},
+}
+
 # Warn if file already exists
 def warn_if_overwrite(output_fn):
 	if os.path.isfile(output_fn):
 		print('\tThe file \'' + output_fn + '\' already exists, and will be overwritten in 3 seconds (press Ctrl + C to prevent overwrite)')
 		time.sleep(3)
 
-def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=None, posCol=None, iids=None, output_dir=None):
+def get_genotypes(strains, output_fn, db, view=None, server=None, idCol=None, chrCol=None, posCol=None, iids=None, output_dir=None):
 	'''
 	Arguments:
 	strains -- list of strain names
@@ -32,14 +47,17 @@ def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=
 	chrCol -- column in view containing marker chromosome labels (e.g. snp_chr)
 	posCol -- column in view containing marker genetic distance (e.g. snp_bp_mm10)
 	'''
+
+	if view is None:
+		view=defaults[db]['view']
 	if server is None:
 		server='PARKSLAB'
 	if idCol is None:
-		idCol='rsID'
+		idCol=defaults[db]['idCol']
 	if chrCol is None:
-		chrCol='snp_chr'
+		chrCol=defaults[db]['chrCol']
 	if posCol is None:
-		posCol='snp_bp_mm10'
+		posCol=defaults[db]['posCol']
 	if output_dir is None:
 		output_dir = ''
 	elif output_dir and not os.path.isdir(output_dir):
@@ -112,10 +130,10 @@ if __name__ == '__main__':
 		help='file w/ tab-separated format: [strains column] [IDs columns (optional)]')
 	parser.add_argument(dest='db',
 		help='SQL database containing genotype view (e.g. HMDP)')
-	parser.add_argument(dest='view',
+
+	parser.add_argument('-view',
 		help='SQL view containing genotypes for strains \
 		in PLINK format (e.g. [dbo].[genotype_calls_plink_format])')
-
 	parser.add_argument('-output_dir', required=False,
 		help='directory in which to store results.')
 	parser.add_argument('-server', required=False,
@@ -146,4 +164,4 @@ if __name__ == '__main__':
 			for x in lines:
 				strains.append(''.join(x))
 
-		get_genotypes(strains, os.path.splitext(filename)[0], args.db, args.view, args.server, args.idCol, args.chrCol, args.posCol, iids, output_dir)
+		get_genotypes(strains=strains, output_fn=os.path.splitext(filename)[0], db=args.db, view=args.view, server=args.server, idCol=args.idCol, chrCol=args.chrCol, posCol=args.posCol, iids=iids, output_dir=args.output_dir)

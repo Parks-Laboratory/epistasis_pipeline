@@ -20,7 +20,7 @@ defaults = {
 		'chrCol': 'snp_chr',
 	},
 	'DO': {
-		'table': '',
+		'table': '[dbo].[Genotype_Calls_Plink_Format]',
 		'idCol': 'snp_id',
 		'posCol': 'snp_bp_mm10',
 		'chrCol': 'snp_chr',
@@ -48,16 +48,16 @@ def get_genotypes(strains, output_fn, db, table=None, server=None, idCol=None, c
 	posCol -- column in table containing marker genetic distance (e.g. snp_bp_mm10)
 	'''
 
-	if table is None:
-		table=defaults[db]['table']
 	if server is None:
-		server='PARKSLAB'
+		server = 'PARKSLAB'
+	if table is None:
+		table = defaults[db]['table']
 	if idCol is None:
-		idCol=defaults[db]['idCol']
+		idCol = defaults[db]['idCol']
 	if chrCol is None:
-		chrCol=defaults[db]['chrCol']
+		chrCol = defaults[db]['chrCol']
 	if posCol is None:
-		posCol=defaults[db]['posCol']
+		posCol = defaults[db]['posCol']
 	if output_dir is None:
 		output_dir = ''
 	elif output_dir and not os.path.isdir(output_dir):

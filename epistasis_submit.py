@@ -357,7 +357,7 @@ if __name__ == '__main__':
 		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
 		help='number of snps in a group', action = 'store', default=1500)
-	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default=''
+	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default='',
 		help='file name containing list of process/job numbers to run', action = 'store')
 
 

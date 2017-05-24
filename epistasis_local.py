@@ -121,7 +121,7 @@ for i in range(0, len(strains)):
     for trait in traits[i]:
         trait = convert_missing_value (trait)
     f.write( pheno_strains[i] + "\t")
-    f.write( str(i) + "\t")
+    f.write( str(i+1) + "\t")
     f.write( "\t".join(traits[i]))
     #f.write("\n")
 f.close()
@@ -137,7 +137,7 @@ if(suffix == ".covar.txt"):
         for i in range(0, len(strains)):
             pheno_strains[i] = convert_missing_value(pheno_strains[i])
             f.write(pheno_strains[i] + "\t")
-            f.write(str(i) + "\t")
+            f.write(str(i+1) + "\t")
             f.write(covar_col[i])
 f.close()
 print("generated .covar.txt file")

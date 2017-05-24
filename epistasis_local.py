@@ -114,7 +114,7 @@ else:
 # fixphenos and write to %s.pheno.txt %pheno_prefix
 f = open(prefix + ".pheno.txt", "w")
 f.write(header)
-for i in range(1, len(strains)):
+for i in range(0, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
     # replace " " with "\."
     pheno_strains[i] = convert_missing_value (pheno_strains[i])
@@ -134,7 +134,7 @@ if(suffix == ".covar.txt"):
     covar_col = ([x.split('\t')[-1] for x in open(input_file).readlines()][1:])
     with open(prefix + ".covar.txt", "w") as f:
         f.write(header)
-        for i in range(1, len(strains)):
+        for i in range(0, len(strains)):
             pheno_strains[i] = convert_missing_value(pheno_strains[i])
             f.write(pheno_strains[i] + "\t")
             f.write(str(i) + "\t")

@@ -266,8 +266,7 @@ def get_num_filtered_snps(params):
 	num_snps = 0
 	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as f:
 		for line in f.readlines():
-			line = line.split()
-			if len(line) > 1 and 'rs' in line[1]:
+			if line.strip():
 				num_snps += 1
 	return num_snps
 

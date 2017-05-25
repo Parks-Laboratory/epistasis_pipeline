@@ -84,6 +84,11 @@ def get_genotypes(strains, output_fn, db, table=None, server=None, idCol=None, c
 	linebuffer = []
 	# maybe retrieve all rows, then print at end
 	for row in res:
+
+		for i in range(0, len(row)):
+			if(row[i] == None):
+				row[i] = '0 0'
+
 		# generate .tfam file for PLINK
 		if tfam == 0:
 			# sanitize strain names

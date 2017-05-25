@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Runs Plink, Generates Submit Files and Processes Inputs/Outputs to Cluster
+Generates Submit Files and Processes Inputs/Outputs to Cluster
 """
 from __future__ import division
 import sys
@@ -266,8 +266,7 @@ def get_num_filtered_snps(params):
 	num_snps = 0
 	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as f:
 		for line in f.readlines():
-			line = line.split()
-			if len(line) > 1 and 'rs' in line[1]:
+			if line.strip():
 				num_snps += 1
 	return num_snps
 
@@ -357,7 +356,7 @@ if __name__ == '__main__':
 		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
 		help='number of snps in a group', action = 'store', default=1500)
-	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default=''
+	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default='',
 		help='file name containing list of process/job numbers to run', action = 'store')
 
 

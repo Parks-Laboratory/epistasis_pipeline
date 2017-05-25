@@ -114,14 +114,14 @@ else:
 # fixphenos and write to %s.pheno.txt %pheno_prefix
 f = open(prefix + ".pheno.txt", "w")
 f.write(header)
-for i in range(1, len(strains)):
+for i in range(0, len(strains)):
     # replace (NULL|NA|#NUM!|-Inf|Inf) with -9
     # replace " " with "\."
     pheno_strains[i] = convert_missing_value (pheno_strains[i])
     for trait in traits[i]:
         trait = convert_missing_value (trait)
     f.write( pheno_strains[i] + "\t")
-    f.write( str(i) + "\t")
+    f.write( str(i+1) + "\t")
     f.write( "\t".join(traits[i]))
     #f.write("\n")
 f.close()
@@ -134,10 +134,10 @@ if(suffix == ".covar.txt"):
     covar_col = ([x.split('\t')[-1] for x in open(input_file).readlines()][1:])
     with open(prefix + ".covar.txt", "w") as f:
         f.write(header)
-        for i in range(1, len(strains)):
+        for i in range(0, len(strains)):
             pheno_strains[i] = convert_missing_value(pheno_strains[i])
             f.write(pheno_strains[i] + "\t")
-            f.write(str(i) + "\t")
+            f.write(str(i+1) + "\t")
             f.write(covar_col[i])
 f.close()
 print("generated .covar.txt file")
@@ -145,8 +145,7 @@ print("generated .covar.txt file")
 Call get_genotypes to get the .tped and .tfam file
 '''
 if  genotypes:
-    get_genotypes(strains , output_fn= prefix, output_dir= "", db= "HMDP",
-               view="[dbo].[genotype_calls_plink_format]")
+    get_genotypes(strains, output_fn= prefix, db= "HMDP")
 
 print("generated  .tped and .tfam file using get_genotypes")
 

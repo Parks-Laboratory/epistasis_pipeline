@@ -54,6 +54,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file', action = 'store')
+parser.add_argument('db', action = 'store', help = 'Specify the database you want to parse data from')
 parser.add_argument('--maf', action='store', default = 0.05)
 parser.add_argument('--geno', action='store', default = 0.1)
 parser.add_argument('--covar', action='store_true', default=False)
@@ -74,6 +75,7 @@ if ((not args.plink) and (not args.check) and (not args.genotype)):
 else:
     plink, check, genotypes = args.plink, args.check, args.genotype
 
+db = args.db
 hold = args.hold
 maf = args.maf
 geno = args.geno
@@ -145,7 +147,7 @@ print("generated .covar.txt file")
 Call get_genotypes to get the .tped and .tfam file
 '''
 if  genotypes:
-    get_genotypes(strains, output_fn= prefix, db= "HMDP")
+    get_genotypes(strains, output_fn= prefix, db=db)
 
 print("generated  .tped and .tfam file using get_genotypes")
 

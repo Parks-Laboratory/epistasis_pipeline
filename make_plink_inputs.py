@@ -35,7 +35,7 @@ def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=
 	if server is None:
 		server='PARKSLAB'
 	if idCol is None:
-		idCol='rsID'
+		idCol='snp_id'
 	if chrCol is None:
 		chrCol='snp_chr'
 	if posCol is None:
@@ -66,6 +66,11 @@ def get_genotypes(strains, output_fn, db, view, server=None, idCol=None, chrCol=
 	linebuffer = []
 	# maybe retrieve all rows, then print at end
 	for row in res:
+
+		for i in range(0, len(row)):
+			if(row[i] == None):
+				row[i] = '0 0'
+
 		# generate .tfam file for PLINK
 		if tfam == 0:
 			# sanitize strain names

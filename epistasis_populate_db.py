@@ -2,6 +2,7 @@ import pyodbc
 import csv
 import os
 from functools import reduce
+from decimal import Decimal
 import argparse
 
 parser = argparse.ArgumentParser(description="specifying argument for populating .gwas file")
@@ -28,8 +29,8 @@ def create_table(db, table_name):
             "SNP2 varchar(20)," \
             "Trait varchar(50)," \
             "Pvalue float, " \
-            "CONSTRAINT PK PRIMARY KEY (SNP1, SNP2, Trait));"
-    print(query)
+			"CONSTRAINT PK PRIMARY KEY (SNP1, SNP2, Trait));" 
+    #print(query)
     cursor.execute(query)
     cursor.commit()
     print("successfully create the table %s in database: %s" % (table_name, db))
@@ -113,8 +114,7 @@ if __name__ == '__main__':
                 try:
                     query = "insert into dbo.{!s}".format(table_name) +\
                    "(SNP1, SNP2, Trait, Pvalue)" + \
-                    " values ({!r}, {!r}, {!r}, {:.16f})".format(row[0], row[1], trait, float(row[-1]))
-                    # print(query)
+                    " values ({!r}, {!r}, {!r}, {!s})".format(row[0], row[1], trait, str(Decimal(row[-1]))) 
                     cursor.execute(query)
                     # current setting is to commit every execution of the query
                     cursor.commit()
@@ -123,16 +123,26 @@ if __name__ == '__main__':
                 except ValueError as ex:
                     errmsg = "Warning: error in " + str(fileName) + "," + " row[-1] is: " + row[-1] + " type: " + str(
                         type(row[-1]))
-                    print(errmsg)
-                    print("current row:", end="")
-                    print(row)
+                    print errmsg
+                    print "current row:",
+                    print row
                     f = open("Epistasis_{!r}_err.txt".format(table_name), "w")
                     f.write(errmsg + "\n")
-                    f.write(row)
+                    #f.write(row) ## this was tripping up the code...not sure why.
                     f.close()
 
-                except IndexError as iex :
+                except IndexError as iex:
                     print(row)
+
+                except Exception as eex:
+                    errmsg = "DUPLICATE KEY or WRONG VALUE in " + row[0] + " " + row[1]
+                    print errmsg
+                    print "current row:",
+                    print row
+                    f = open("Epistasis_{!r}_err.txt".format(table_name), "w")
+                    f.write(errmsg + "\n")
+                    f.close()
+
     cursor.commit()
     print('Done!')
     cnxn.close()

@@ -68,6 +68,8 @@ parser.add_argument('--genotype', action='store_true', default=False)
 parser.add_argument('--plink', action='store_true', default=False)
 parser.add_argument('--check', action='store_true', default=False)
 parser.add_argument('--hold', action='store_true', default=False)
+parser.add_argument('-s', '--species', dest='species', help='mouse or human',
+	default='mouse', action='store', choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
 
 args = parser.parse_args()
 if ((not args.plink) and (not args.check) and (not args.genotype)):
@@ -80,6 +82,7 @@ hold = args.hold
 maf = args.maf
 geno = args.geno
 covar = args.covar
+species = args.species
 
 make_bed_cmd = '%(plink_location)s --tfile sub%(dataset)s --allow-no-sex --maf 0.05 --geno 0.1 --make-bed --out %(dataset)s %(plink_species)s'
 # make_bed_cmd = '%(plink_location)s --tfile %(dataset)s --allow-no-sex --maf 0.05 --geno 0.1 --snps %(snp_range)s --make-bed --out %(dataset)s %(plink_species)s'
@@ -152,13 +155,13 @@ if  genotypes:
 print("generated  .tped and .tfam file using get_genotypes")
 
 # function to run plink (used to be in epistasis_wrapper.py)
-def populate_available(dataset, maf,geno):
-    # plink_species = ['', '--%s' % species][species != 'human']
+def populate_available(dataset, maf, geno, species):
+    plink_species = ['', '--%s' % species][species != 'human']
 
     # run plink commands
     plink_location = 'plink'
-    cmd1 = "plink --tfile %s --make-bed -out %s.FULL" %(prefix, prefix)
-    cmd2 = "plink --bfile %s.FULL --maf %f --geno %f --make-bed  -out %s.FILTERED" %(prefix, maf, geno, prefix)
+    cmd1 = "plink --tfile %s --make-bed -out %s.FULL %s" %(prefix, prefix, plink_species)
+    cmd2 = "plink --bfile %s.FULL --maf %f --geno %f --make-bed  -out %s.FILTERED %s" %(prefix, maf, geno, prefix, plink_species)
     f = open("plink_stdout.txt", "w")
     subprocess.check_call(cmd1, shell=True, stderr=subprocess.STDOUT, stdout=f)
     subprocess.check_call(cmd2, shell=True, stderr=subprocess.STDOUT, stdout=f)
@@ -273,7 +276,7 @@ if check:
 print("finished checking the fids and iids")
 
 if plink:
-    populate_available(prefix, maf, geno)
+    populate_available(prefix, maf, geno, species)
     print ("finished generating .bed,.bim,.ped file filetering the snps specified by --maf and --geno using plink")
 
 check_headers(prefix)

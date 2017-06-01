@@ -24,8 +24,8 @@ debug = False
 # input/output folders
 root = os.path.split(os.path.realpath(sys.argv[0]))[0]
 dataLoc = os.path.join(root, 'data')
-condor_output_root = os.path.join(root, 'condor_out')
-job_output_root = os.path.join(root, 'results')
+condor_output_root = os.path.join(root, 'epistasis_condor_out')
+job_output_root = os.path.join(root, 'epistasis_results')
 
 # script locations
 prog_path = os.path.join(root, 'scripts')
@@ -409,7 +409,7 @@ if __name__ == '__main__':
 		condition = condition[0]
 
 	# check_prefixes(dataLoc, dataset)
-	squid_archive = dataset + '.tar'
+	squid_archive = 'epistasis_' + dataset + '.tar'
 	params.update({
 		'root': root,
 		'dataLoc': dataLoc,

@@ -55,7 +55,7 @@ def run(params, flags):
 	if params['jobs_to_rerun_filename']:
 		params['num_jobs'] = get_num_jobs_to_rerun(params)
 	else:
-		params['num_jobs'] = calculate_num_jobs(params, params['group_size'])
+		params['num_jobs'] = get_num_jobs_to_run(params, params['group_size'])
 
 	write_submission_file(params, flags)
 	write_shell_script(params, flags)
@@ -267,7 +267,7 @@ def get_num_filtered_snps(params):
 				num_snps += 1
 	return num_snps
 
-def calculate_num_jobs(params, group_size):
+def get_num_jobs_to_run(params, group_size):
 	num_snps = get_num_filtered_snps(params)
 
 	num_groups = ceil(num_snps/group_size)

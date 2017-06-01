@@ -66,7 +66,6 @@ def run(params, flags):
 def write_submission_files(params):
 	pass
 
-
 def write_submission_file(params, flags):
 	'''
 	Arguments:
@@ -113,7 +112,6 @@ def write_submission_file(params, flags):
 	submit_file = open( params['submit_filename'], 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
 	submit_file.close()
-
 
 def write_shell_script(params, flags):
 	exec_template = textwrap.dedent(
@@ -219,14 +217,12 @@ def write_shell_script(params, flags):
 	# give script permission to execute
 	subprocess.call('chmod +x %(executable_filename)s' % params, shell = True)
 
-
 def make_output_dirs(params):
 	if not os.path.exists(params['condor_output']):
 		os.makedirs(params['condor_output'])
 
 	if not os.path.exists(params['job_output']):
 		os.makedirs(params['job_output'])
-
 
 def package_SQUID_files(params):
 	# Add large files to a tar archive file, which will be sent over by SQUID
@@ -239,7 +235,6 @@ def package_SQUID_files(params):
 	subprocess.call('rm %(squid_archive)s' % params, shell = True)
 	if(subprocess.call('mv %(squid_zip)s /squid/%(username)s' % params, shell = True)):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
-
 
 def submit_jobs(params):
 	# submit jobs to condor
@@ -283,7 +278,6 @@ def get_num_jobs_to_run(params, group_size):
 
 	return int(num_AB_jobs + num_AA_jobs)
 
-
 def check_prefixes(dataloc, dataset):
 	'''
 	Looks in directory specified by dataloc, and ensures there are 2 sets of
@@ -299,8 +293,6 @@ def check_prefixes(dataloc, dataset):
 	# check that prefixes match up and that each extension is included exactly twice
 	if not len(full_prefixes) == 3 or not len(filtered_prefixes) == 3:
 		sys.exit('ERROR: two sets of .bed/.bim/.fam files could not be found in "{}" with the prefix "{}"'.format(dataloc, dataset))
-
-
 
 if __name__ == '__main__':
 	import argparse

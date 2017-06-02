@@ -1,4 +1,5 @@
 # Epistasis Pipeline
+[Documentation](http://microsoftgenomics.github.io/FaST-LMM/#epistasis)
 
 ## Step 1: Filtering markers, making pheno file (epistasis_local.py)
 1. Manually generate input file with one row per individual, and the following tab-separated columns:

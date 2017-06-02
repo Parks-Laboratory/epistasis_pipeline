@@ -55,5 +55,7 @@ If memory requirements are set too low, it can happen that some jobs will fail w
 
 1. Call **epistasis_submit.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
 
+	Be careful not to change inputs/parameters in such a way that the failed-job number(s) wind up mapping to different work.
+
 ### Regarding naming of files from rerun jobs
 The .out and .err files stored under condor_out will have a different cluster number than the original run, and their job/process numbers will start again at 0, but the .gwas files will be labeled with the appropriate job numbers from the file specified by the --rerun flag. Therefore, if all re-run jobs complete successfully, these .gwas files can be put in the same directory as the .gwas files from the original run, and the directory will contain a complete set of results with consistent file names.

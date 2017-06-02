@@ -41,7 +41,7 @@ If memory requirements are set too low, it can happen that some jobs will fail w
 
 ### Procedure
 1. Get the job numbers for the jobs that need to be re-run.
-1. Using either [this script](https://github.com/Parks-Laboratory/condor_tools/blob/master/writeFailedJobs.py) or manually, create a file in the **data/** directory with one job number per line:
+1. Using either [*writeFailedJobs.py*](https://github.com/Parks-Laboratory/condor_tools) or manually, create a file in the **data/** directory with one job number per line:
 
 	```
 	8605

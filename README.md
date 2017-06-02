@@ -52,7 +52,7 @@ If memory requirements are set too low, it can happen that some jobs will fail w
 	8836
 	8840
 	```
-
+1. Put *failed.txt* or whatever file contains the missing job numbers in the **data/** directory
 1. Call **epistasis_submit.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
 
 	Be careful not to change inputs/parameters in such a way that the failed-job number(s) wind up mapping to different work.

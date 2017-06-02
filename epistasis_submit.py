@@ -82,7 +82,7 @@ def write_submission_file(params, flags):
 	log = %(condor_output)s/epistasis_$(Cluster).log
 	error = %(condor_output)s/epistasis_$(Cluster)_$(Process).err
 
-	InitialDir = %(root)s/results/%(dataset)s
+	InitialDir = %(root)s/epistasis_results/%(dataset)s
 	executable = %(root)s/%(executable_filename)s
 	arguments = $(Process) %(offset)s
 	output = %(condor_output)s/epistasis_$(Cluster)_$(Process).out
@@ -254,15 +254,15 @@ def get_num_jobs_to_rerun(params):
 			num_jobs += 1
 		return num_jobs
 
-def get_num_filtered_snps(params):
-	num_snps = 0
-	with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as f:
-		for line in f.readlines():
-			if line.strip():
-				num_snps += 1
-	return num_snps
-
 def get_num_jobs_to_run(params, group_size):
+	def get_num_filtered_snps(params):
+		num_snps = 0
+		with open(os.path.join(params['dataLoc'], params['dataset']+FILTERED_DATASET+'.bim')) as f:
+			for line in f.readlines():
+				if line.strip():
+					num_snps += 1
+		return num_snps
+
 	num_snps = get_num_filtered_snps(params)
 
 	num_groups = ceil(num_snps/group_size)

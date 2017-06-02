@@ -1,4 +1,5 @@
 # Epistasis Pipeline
+[Documentation](http://microsoftgenomics.github.io/FaST-LMM/#epistasis)
 
 ## Step 1: Filtering markers, making pheno file (epistasis_local.py)
 1. Manually generate input file with one row per individual, and the following tab-separated columns:
@@ -13,7 +14,7 @@
 	* --plink specifies ONLY run plink on existing _prefix_.tped and _prefix_.tfam files and generate _prefix_.FILTERED(FULL).bim/bed/fam**
 	* --check specifies ONLY check fids and iids match across generated files
 	* --hold specifies not transfer required files to ./data/ folder
-## Step 2: Preparing files for transfer, submit jobs (epistasis_submit.py)
+## Step 2: Preparing files for transfer, submitting jobs (epistasis_submit.py)
 1. scp **data/**, **scripts/**, **epistasis_submit.py** to submit server
 	* **data/** contains
 		**_prefix_.FILTERED.bim**,
@@ -40,7 +41,7 @@ If memory requirements are set too low, it can happen that some jobs will fail w
 
 ### Procedure
 1. Get the job numbers for the jobs that need to be re-run.
-1. Create a file in the **data/** directory with one job number per line:
+1. Using either [*writeFailedJobs.py*](https://github.com/Parks-Laboratory/condor_tools) or manually, create a file in the **data/** directory with one job number per line:
 
 	```
 	8605
@@ -51,8 +52,10 @@ If memory requirements are set too low, it can happen that some jobs will fail w
 	8836
 	8840
 	```
-
+1. Put *failed.txt* or whatever file contains the missing job numbers in the **data/** directory
 1. Call **epistasis_submit.py** with **--rerun _file_with_jobs_to_rerun_**, and whatever other flags are necessary to ensure these jobs succeed this time.
+
+	Be careful not to change inputs/parameters in such a way that the failed-job number(s) wind up mapping to different work.
 
 ### Regarding naming of files from rerun jobs
 The .out and .err files stored under condor_out will have a different cluster number than the original run, and their job/process numbers will start again at 0, but the .gwas files will be labeled with the appropriate job numbers from the file specified by the --rerun flag. Therefore, if all re-run jobs complete successfully, these .gwas files can be put in the same directory as the .gwas files from the original run, and the directory will contain a complete set of results with consistent file names.

@@ -4,7 +4,7 @@
 ## Step 1: Filtering markers, making pheno file (epistasis_local.py)
 1. Manually generate input file with one row per individual, and the following tab-separated columns:
 
-	Strain	Sex	trait 	Covar
+	Strain	Sex	_trait_ 	Covar
 	
 	Note: the "Covar" column is optional
 

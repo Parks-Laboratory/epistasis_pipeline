@@ -54,7 +54,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file', action = 'store')
-parser.add_argument('db', action = 'store', help = 'Specify the database you want to parse data from')
+parser.add_argument('db', action = 'store', help = 'Specify the database you want to parse data from', default = 'HMDP')
 parser.add_argument('--maf', action='store', default = 0.05)
 parser.add_argument('--geno', action='store', default = 0.1)
 parser.add_argument('--covar', action='store_true', default=False)

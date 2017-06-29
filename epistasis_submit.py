@@ -59,13 +59,27 @@ def run(params, flags):
 
 	write_submission_file(params, flags)
 	write_shell_script(params, flags)
-
+	write_dag_files(params)
 	package_SQUID_files(params)
 	submit_jobs(params)
 
 def write_submission_files(params):
 	pass
 
+# write the dag_man file
+def write_dag_files(params):
+	num_jobs = params['num_jobs']
+	with open("%s" %params['dag_filename'], 'w') as f:
+		for i in range(1, num_jobs + 1):
+			f.write("JOB %s %s \nVARS %s Jobnum=\"%s\" \n"%(i, params['submit_filename'], i, i))
+		# config_file
+		f.write("CONFIG dagman_config")
+	write_config_fires(params)
+
+def write_config_fires(params):
+	with open("%s" % params['config_filename'], 'w') as f:
+		# set the maximum number of jobs IDLE
+		f.write("DAGMAN_MAX_JOBS_IDLE = %s" %params['max_idle_jobs'])
 def write_submission_file(params, flags):
 	'''
 	Arguments:
@@ -106,8 +120,9 @@ def write_submission_file(params, flags):
 	%(use_osg)s
 	%(use_uw)s
 
-	queue %(num_jobs)s
+	queue 1 
 	''')
+	# write only one job
 
 	submit_file = open( params['submit_filename'], 'w')
 	submit_file.write( (submit_template % params).replace(',,', ',') )
@@ -238,7 +253,7 @@ def package_SQUID_files(params):
 
 def submit_jobs(params):
 	# submit jobs to condor
-	condor_cluster = subprocess.Popen(['condor_submit', params['submit_filename'] ], stdout=subprocess.PIPE).communicate()[0]
+	condor_cluster = subprocess.Popen(['condor_submit_dag', params['dag_filename'] ], stdout=subprocess.PIPE).communicate()[0]
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
@@ -345,14 +360,16 @@ if __name__ == '__main__':
 		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
 		help='number of snps in a group', action = 'store', default=1500)
+
 	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default='',
 		help='file name containing list of process/job numbers to run', action = 'store')
 
-
+	#==========DAG MAN! ===========================
+	parser.add_argument('--maxjobs', type=int, dest='max_idle_jobs', default=3000,
+					   help='maximum scheduled idle jobs for DAG_man ', action='store' )
 	args = parser.parse_args()
 
 	dataset = args.dataset[0]
-
 	dataLoc = args.datadir
 	job_output_root = args.outputdir
 	list_data = args.list_dataset
@@ -369,12 +386,17 @@ if __name__ == '__main__':
 	condition = args.condition
 	group_size = args.group_size
 	jobs_to_rerun_filename = args.jobs_to_rerun_filename
+	max_idle_jobs = args.max_idle_jobs
 
-
+	job_output_root = os.path.join(root, 'epistasis_results_%s'%dataset)
 	if debug:
 		log = Tee('epistasis_pipeline-%s.log' % timestamp())
 	else:
-		log = Tee('/dev/null')
+		if not os.path.exists('./dev/null'):
+			os.makedirs('./dev/null')
+			# give permission
+			subprocess.call('chmod +rw ./dev/null -r', shell=True)
+		log = Tee('./dev/null/tee.txt')
 
 	if tasks and len(datasets) > 1:
 		log.send_output('More than one dataset specified along with --tasks option; quitting')
@@ -417,6 +439,8 @@ if __name__ == '__main__':
 		'atlas_installation': 'atlas.tar.gz',
 		'executable_filename' : 'epistasis_%s.sh' % dataset,
 		'submit_filename': 'epistasis_%s.sub' % dataset,
+		'dag_filename': 'epistasis_%s.dag' % dataset,
+		'config_filename': 'epistasis_%s.config' % dataset,
 		'jobs_to_rerun_filename': jobs_to_rerun_filename,
 		'debug': ['', '--debug'][debug],
 		'prog_path':prog_path,
@@ -430,6 +454,7 @@ if __name__ == '__main__':
 		'use_chtc': ['requirements = (Target.PoolName =!= "CHTC")', '']['chtc' in pools],
 		'use_osg': ['', '+wantGlidein = true']['osg' in pools],
 		'use_uw': ['', '+wantFlocking = true']['uw' in pools],
+		'max_idle_jobs': max_idle_jobs
 	})
 
 

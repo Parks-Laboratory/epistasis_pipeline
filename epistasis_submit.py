@@ -46,22 +46,23 @@ class Tee(object):
 		self.logfile.close()
 
 def timestamp():
-	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
+	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H:%M:%S')
 
 def run(params, flags):
-	os.chdir(root)
-	make_output_dirs(params)
+    os.chdir(root)
+    make_output_dirs(params)
+    print("created output dir at %s" %params['job_output'])
+    if params['jobs_to_rerun_filename']:
+        params['num_jobs'] = get_num_jobs_to_rerun(params)
+    else:
+        params['num_jobs'] = get_num_jobs_to_run(params, params['group_size'])
 
-	if params['jobs_to_rerun_filename']:
-		params['num_jobs'] = get_num_jobs_to_rerun(params)
-	else:
-		params['num_jobs'] = get_num_jobs_to_run(params, params['group_size'])
 
-	write_submission_file(params, flags)
-	write_shell_script(params, flags)
-	write_dag_files(params)
-	package_SQUID_files(params)
-	submit_jobs(params)
+    write_submission_file(params, flags)
+    write_shell_script(params, flags)
+    write_dag_files(params)
+    package_SQUID_files(params)
+    submit_jobs(params)
 
 def write_submission_files(params):
 	pass
@@ -73,7 +74,7 @@ def write_dag_files(params):
 		for i in range(1, num_jobs + 1):
 			f.write("JOB %s %s \nVARS %s Jobnum=\"%s\" \n"%(i, params['submit_filename'], i, i))
 		# config_file
-		f.write("CONFIG dagman_config")
+		f.write("CONFIG %s" %params['config_filename'])
 	write_config_fires(params)
 
 def write_config_fires(params):
@@ -253,7 +254,7 @@ def package_SQUID_files(params):
 
 def submit_jobs(params):
 	# submit jobs to condor
-	condor_cluster = subprocess.Popen(['condor_submit_dag', params['dag_filename'] ], stdout=subprocess.PIPE).communicate()[0]
+	condor_cluster = subprocess.Popen(['condor_submit_dag', '-update_submit', params['dag_filename'] ], stdout=subprocess.PIPE).communicate()[0]
 	condor_cluster = re.search('\d{4,}', condor_cluster).group()
 	print("Submitting Jobs to Cluster %s" % condor_cluster)
 	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
@@ -388,7 +389,7 @@ if __name__ == '__main__':
 	jobs_to_rerun_filename = args.jobs_to_rerun_filename
 	max_idle_jobs = args.max_idle_jobs
 
-	job_output_root = os.path.join(root, 'epistasis_results_%s'%dataset)
+	# job_output_root = os.path.join(root, 'epistasis_results_%s'%dataset)
 	if debug:
 		log = Tee('epistasis_pipeline-%s.log' % timestamp())
 	else:

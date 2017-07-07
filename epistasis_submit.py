@@ -60,7 +60,7 @@ def run(params, flags):
 
     write_submission_file(params, flags)
     write_shell_script(params, flags)
-    write_dag_files(params)
+    write_dag_file(params)
     package_SQUID_files(params)
     submit_jobs(params)
 
@@ -68,16 +68,24 @@ def write_submission_files(params):
 	pass
 
 # write the dag_man file
-def write_dag_files(params):
+def write_dag_file(params):
 	num_jobs = params['num_jobs']
 	with open("%s" %params['dag_filename'], 'w') as f:
 		for i in range(1, num_jobs + 1):
-			f.write("JOB %s %s \nVARS %s Jobnum=\"%s\" \n"%(i, params['submit_filename'], i, i))
+			f.write("JOB %s %s \nVARS %s offset=\"%s\" \n"%(i, params['submit_filename'], i, i))
 		# config_file
 		f.write("CONFIG %s" %params['config_filename'])
-	write_config_fires(params)
+	write_config_fire(params)
 
-def write_config_fires(params):
+def write_dag_file_single_cluster(params):
+	num_jobs = params['num_jobs']
+	with open("%s" %params['dag_filename'], 'w') as f:
+		f.write("JOB A %s\n"%(params['submit_filename']))
+		# config_file
+		f.write("CONFIG %s" %params['config_filename'])
+	write_config_fire(params)
+
+def write_config_fire(params):
 	with open("%s" % params['config_filename'], 'w') as f:
 		# set the maximum number of jobs IDLE
 		f.write("DAGMAN_MAX_JOBS_IDLE = %s" %params['max_idle_jobs'])
@@ -99,7 +107,7 @@ def write_submission_file(params, flags):
 
 	InitialDir = %(root)s/epistasis_results/%(dataset)s
 	executable = %(root)s/%(executable_filename)s
-	arguments = $(Process) %(offset)s
+	arguments = $(Process) $(offset)
 	output = %(condor_output)s/epistasis_$(Cluster)_$(Process).out
 
 	should_transfer_files = YES
@@ -179,7 +187,7 @@ def write_shell_script(params, flags):
 	exit_on_failure
 
 	echo "Process $1 (job %(job_number)s) generated gwas $(ls *gwas)"
-
+	echo "Offset $2"
 	cleanup
 
 	exit 0
@@ -253,12 +261,12 @@ def package_SQUID_files(params):
 		sys.exit('Failed to create %(squid_zip)s and copy it to squid directory' % params)
 
 def submit_jobs(params):
-	# submit jobs to condor
-	condor_cluster = subprocess.Popen(['condor_submit_dag', '-update_submit', params['dag_filename'] ], stdout=subprocess.PIPE).communicate()[0]
-	condor_cluster = re.search('\d{4,}', condor_cluster).group()
-	print("Submitting Jobs to Cluster %s" % condor_cluster)
-	log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
-
+    # submit jobs to condor
+    condor_cluster = subprocess.Popen(['condor_submit_dag', '-update_submit', params['dag_filename'] ], stdout=subprocess.PIPE).communicate()[0]
+    print(condor_cluster)
+    condor_cluster = re.search('\d{4,}', condor_cluster).group()
+    print("Submitting Jobs to Cluster %s" % condor_cluster)
+    log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
 def get_num_jobs_to_rerun(params):
 	num_jobs = 0
 	with open(os.path.join(params['dataLoc'], params['jobs_to_rerun_filename'])) as f:
@@ -435,7 +443,7 @@ if __name__ == '__main__':
 		'condor_output': os.path.join(condor_output_root, dataset),
 		'squid_archive': squid_archive,
 		'squid_zip': squid_archive + '.gz',
-		'username': pwd.getpwuid(os.getuid()).pw_name,
+		'username':  pwd.getpwuid(os.getuid()).pw_name,
 		'python_installation': 'python.tar.gz',
 		'atlas_installation': 'atlas.tar.gz',
 		'executable_filename' : 'epistasis_%s.sh' % dataset,

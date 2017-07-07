@@ -189,7 +189,6 @@ if __name__ == '__main__':
 	debug = args.debug
 	dataset = args.dataset
 	group_size = args.group_size
-
 	output_dir = root
 	process_id = int( args.process_id )
 

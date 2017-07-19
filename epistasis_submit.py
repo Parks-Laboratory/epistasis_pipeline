@@ -49,20 +49,21 @@ def timestamp():
 	return datetime.strftime(datetime.now(), '%Y-%m-%d_%H:%M:%S')
 
 def run(params, flags):
-    os.chdir(root)
-    make_output_dirs(params)
-    print("created output dir at %s" %params['job_output'])
-    if params['jobs_to_rerun_filename']:
-        params['num_jobs'] = get_num_jobs_to_rerun(params)
-    else:
-        params['num_jobs'] = get_num_jobs_to_run(params, params['group_size'])
+	os.chdir(root)
+	make_output_dirs(params)
+	print("created output dir at %s" %params['job_output'])
+	if params['jobs_to_rerun_filename']:
+		params['num_jobs'] = get_num_jobs_to_rerun(params)
+	else:
+		params['num_jobs'] = get_num_jobs_to_run(params, params['group_size'])
 
-
-    write_submission_file(params, flags)
-    write_shell_script(params, flags)
-    write_dag_file(params)
-    package_SQUID_files(params)
-    submit_jobs(params)
+	check_file_exits()
+	write_submission_file(params, flags)
+	write_shell_script(params, flags)
+	write_dag_file(params)
+	package_SQUID_files(params)
+	exit(10)
+	submit_jobs(params)
 
 def write_submission_files(params):
 	pass
@@ -71,11 +72,31 @@ def write_submission_files(params):
 def write_dag_file(params):
 	num_jobs = params['num_jobs']
 	with open("%s" %params['dag_filename'], 'w') as f:
-		for i in range(1, num_jobs + 1):
+		for i in range(0, num_jobs):
 			f.write("JOB %s %s \nVARS %s offset=\"%s\" \n"%(i, params['submit_filename'], i, i))
-		# config_file
-		f.write("CONFIG %s" %params['config_filename'])
-	write_config_fire(params)
+			# config_file
+			f.write("CONFIG %s" %params['config_filename'])
+		write_config_fire(params)
+
+def check_file_exits():
+	cur_files = os.listdir('.')
+
+	file_exits = False
+	for fn in cur_files:
+		if "%s" % params['dataset'] in fn:
+			print(fn)
+			file_exits = True
+	if file_exits:
+		print("please clear associated files with %s prefix" % params['dataset'])
+		response = input("automatically? | \"y\" or \"n\" \n")
+		if response.lower() == "y":
+			# clear associated flies with prefix
+			if subprocess.call('rm -f *%s*' % params['dataset'], stdout=subprocess.PIPE, shell=True):
+				print("exit with errors while trying to remove files")
+				exit(1)
+			print("Successfully removed associated files with %s trait" % params['dataset'])
+		else:
+			exit(7)
 
 def write_dag_file_single_cluster(params):
 	num_jobs = params['num_jobs']
@@ -129,7 +150,8 @@ def write_submission_file(params, flags):
 	%(use_osg)s
 	%(use_uw)s
 
-	queue 1 
+	queue 1
+	# there are in total of %(num_jobs) jobs
 	''')
 	# write only one job
 
@@ -263,10 +285,11 @@ def package_SQUID_files(params):
 def submit_jobs(params):
     # submit jobs to condor
     condor_cluster = subprocess.Popen(['condor_submit_dag', '-update_submit', params['dag_filename'] ], stdout=subprocess.PIPE).communicate()[0]
-    print(condor_cluster)
+    # print(condor_cluster)
     condor_cluster = re.search('\d{4,}', condor_cluster).group()
     print("Submitting Jobs to Cluster %s" % condor_cluster)
-    log.send_output("%s was sent to cluster %s at %s" % (params['dataset'], condor_cluster, timestamp()))
+    log.send_output("%s was sent to cluster %s at %s with %s jobs" % (params['dataset'], condor_cluster,
+																	  timestamp(), params['num_jobs']))
 def get_num_jobs_to_rerun(params):
 	num_jobs = 0
 	with open(os.path.join(params['dataLoc'], params['jobs_to_rerun_filename'])) as f:

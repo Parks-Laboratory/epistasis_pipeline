@@ -74,7 +74,7 @@ def write_dag_file(params):
 		for i in range(0, num_jobs):
 			f.write("JOB %s %s \nVARS %s offset=\"%s\" \n"%(i, params['submit_filename'], i, i))
 			# config_file
-			f.write("CONFIG %s" %params['config_filename'])
+		f.write("CONFIG %s \n" %params['config_filename'])
 		write_config_fire(params)
 
 def check_file_exits():
@@ -150,12 +150,12 @@ def write_submission_file(params, flags):
 	%(use_uw)s
 
 	queue 1
-	# there are in total of %(num_jobs) jobs
+	# there are in total of %(num_jobs)s jobs
 	''')
 	# write only one job
 
 	submit_file = open( params['submit_filename'], 'w')
-	submit_file.write( (submit_template % params).replace(',,', ',') )
+	submit_file.write((submit_template % params).replace(',,', ',') )
 	submit_file.close()
 
 def write_shell_script(params, flags):

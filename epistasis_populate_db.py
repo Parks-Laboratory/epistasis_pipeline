@@ -139,7 +139,7 @@ if __name__ == '__main__':
                     print errmsg
                     print "current row:",
                     print row
-                    f = open("Epistasis_{!r}_err.txt".format(table_name), "w")
+                    f = open("Epistasis_{!r}_err.txt".format(table_name), "a+")
                     f.write(errmsg + "\n")
                     f.close()
 

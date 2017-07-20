@@ -62,7 +62,6 @@ def run(params, flags):
 	write_shell_script(params, flags)
 	write_dag_file(params)
 	package_SQUID_files(params)
-	exit(10)
 	submit_jobs(params)
 
 def write_submission_files(params):

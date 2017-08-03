@@ -140,7 +140,10 @@ def write_submission_file(params, flags):
 
 	# if Condor puts job on hold, retry every 5 minutes, up to 4 times
 	periodic_release = ( JobRunCount < 5 ) && ( time() - EnteredCurrentStatus > 60*5 )
-
+	
+	# Set the time limit as 3 hours for running single job 
+	periodic_remove = (CommittedTime - CommittedSuspensionTime) > 10800
+	
 	# set number of times to re-run a job if script returns non-zero exit code
 	max_retries=3
 
@@ -150,11 +153,11 @@ def write_submission_file(params, flags):
 	%(use_uw)s
 
 	queue 1
-	# there are in total of %(num_jobs)s jobs
+	# there are in total of %(num_jobs)s jobs with group size %(group_size)s
 	''')
 	# write only one job
 
-	submit_file = open( params['submit_filename'], 'w')
+	submit_file = open(params['submit_filename'], 'w')
 	submit_file.write((submit_template % params).replace(',,', ',') )
 	submit_file.close()
 
@@ -215,7 +218,7 @@ def write_shell_script(params, flags):
 	''')
 
 	if params['jobs_to_rerun_filename']:
-		params['job_number'] = '$(sed -n "$(( $1 + 1 ))"p %(jobs_to_rerun_filename)s)' % params
+		params['job_number'] = '$(sed -n "$(( $2 + 1 ))"p %(jobs_to_rerun_filename)s)' % params
 	else:
 		params['job_number'] = '$(( $1 + $2 ))'
 
@@ -366,7 +369,7 @@ if __name__ == '__main__':
 		choices=['human', 'mouse', 'dog', 'horse', 'cow', 'sheep'])
 	parser.add_argument('-m', '--memory', dest='memory',
 		help='amount of RAM (in GB) requested per job',
-		default=8, action='store', type=int)
+		default=1, action='store', type=int)
 	parser.add_argument('--maxthreads', dest='maxthreads',
 		help='maximum # of threads to use',
 		default=1, action='store', choices=range(1, 17), type=int)
@@ -390,7 +393,7 @@ if __name__ == '__main__':
 	parser.add_argument('--condition', dest='condition',
 		help='condition on SNP {snp_id}', action='store', nargs=1)
 	parser.add_argument('-g', '--group_size', type=int,
-		help='number of snps in a group', action = 'store', default=1500)
+		help='number of snps in a group', action = 'store', default=600)
 
 	parser.add_argument('--rerun', dest='jobs_to_rerun_filename', default='',
 		help='file name containing list of process/job numbers to run', action = 'store')
@@ -455,6 +458,7 @@ if __name__ == '__main__':
 
 	# check_prefixes(dataLoc, dataset)
 	squid_archive = 'epistasis_' + dataset + '.tar'
+	file_prefix ='epistasis_%s_rerun' %dataset if args.jobs_to_rerun_filename else 'epistasis_%s'
 	params.update({
 		'root': root,
 		'dataLoc': dataLoc,
@@ -468,10 +472,10 @@ if __name__ == '__main__':
 		'username':  pwd.getpwuid(os.getuid()).pw_name,
 		'python_installation': 'python.tar.gz',
 		'atlas_installation': 'atlas.tar.gz',
-		'executable_filename' : 'epistasis_%s.sh' % dataset,
-		'submit_filename': 'epistasis_%s.sub' % dataset,
-		'dag_filename': 'epistasis_%s.dag' % dataset,
-		'config_filename': 'epistasis_%s.config' % dataset,
+		'executable_filename' : 'epistasis_%s.sh' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.sh' % dataset,
+		'submit_filename': 'epistasis_%s.sub' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.sub' % dataset,
+		'dag_filename': 'epistasis_%s.dag' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.dag' % dataset,
+		'config_filename': 'epistasis_%s.config' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.config' % dataset,
 		'jobs_to_rerun_filename': jobs_to_rerun_filename,
 		'debug': ['', '--debug'][debug],
 		'prog_path':prog_path,

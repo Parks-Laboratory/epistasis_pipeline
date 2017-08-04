@@ -458,7 +458,7 @@ if __name__ == '__main__':
 
 	check_prefixes(dataLoc, dataset)
 	squid_archive = 'epistasis_' + dataset + '.tar'
-	file_prefix ='epistasis_%s_rerun' %dataset if args.jobs_to_rerun_filename else 'epistasis_%s'
+	file_prefix ='epistasis_%s_rerun' %dataset if args.jobs_to_rerun_filename else 'epistasis_%s' %dataset
 	params.update({
 		'root': root,
 		'dataLoc': dataLoc,

@@ -82,7 +82,7 @@ def check_file_exits():
 
 	file_exits = False
 	for fn in cur_files:
-		if "%s" % params['dataset'] in fn:
+		if "%s" % params['file_prefix'] in fn:
 			print(fn)
 			file_exits = True
 	if file_exits:
@@ -341,7 +341,7 @@ def check_prefixes(dataloc, dataset):
 
 	# check that prefixes match up and that each extension is included exactly twice
 	if not len(full_prefixes) == 3 or not len(filtered_prefixes) == 3:
-		sys.exit('ERROR: two sets of .bed/.bim/.fam files could not be found in "{}" with the prefix "{}"'.format(dataloc, dataset))
+		sys.exit('ERROR: two sets of .bed/.bim/.fam files could not be found in "{}" with the trait "{}"'.format(dataloc, dataset))
 
 if __name__ == '__main__':
 	import argparse
@@ -456,7 +456,7 @@ if __name__ == '__main__':
 	if condition:
 		condition = condition[0]
 
-	# check_prefixes(dataLoc, dataset)
+	check_prefixes(dataLoc, dataset)
 	squid_archive = 'epistasis_' + dataset + '.tar'
 	file_prefix ='epistasis_%s_rerun' %dataset if args.jobs_to_rerun_filename else 'epistasis_%s'
 	params.update({
@@ -472,10 +472,10 @@ if __name__ == '__main__':
 		'username':  pwd.getpwuid(os.getuid()).pw_name,
 		'python_installation': 'python.tar.gz',
 		'atlas_installation': 'atlas.tar.gz',
-		'executable_filename' : 'epistasis_%s.sh' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.sh' % dataset,
-		'submit_filename': 'epistasis_%s.sub' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.sub' % dataset,
-		'dag_filename': 'epistasis_%s.dag' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.dag' % dataset,
-		'config_filename': 'epistasis_%s.config' % dataset if args.jobs_to_rerun_filename else 'epistasis_%s_rerun.config' % dataset,
+		'executable_filename' : '%s.sh' %file_prefix, #% dataset if not args.jobs_to_rerun_filename else 'epistasis_%s_rerun.sh' % dataset,
+		'submit_filename': '%s.sub' % file_prefix , #if not args.jobs_to_rerun_filename else 'epistasis_%s_rerun.sub' % dataset,
+		'dag_filename': '%s.dag' % file_prefix , #if not args.jobs_to_rerun_filename else 'epistasis_%s_rerun.dag' % dataset,
+		'config_filename': '%s.config' % file_prefix ,# if not args.jobs_to_rerun_filename else 'epistasis_%s_rerun.config' % dataset,
 		'jobs_to_rerun_filename': jobs_to_rerun_filename,
 		'debug': ['', '--debug'][debug],
 		'prog_path':prog_path,
@@ -489,7 +489,8 @@ if __name__ == '__main__':
 		'use_chtc': ['requirements = (Target.PoolName =!= "CHTC")', '']['chtc' in pools],
 		'use_osg': ['', '+wantGlidein = true']['osg' in pools],
 		'use_uw': ['', '+wantFlocking = true']['uw' in pools],
-		'max_idle_jobs': max_idle_jobs
+		'max_idle_jobs': max_idle_jobs,
+		'file_prefix' : file_prefix
 	})
 
 

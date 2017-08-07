@@ -13,7 +13,7 @@
 	* --genotype specifies generate ONLY _prefix_.tped and _prefix_.tfam file
 	* --plink specifies ONLY run plink on existing _prefix_.tped and _prefix_.tfam files and generate _prefix_.FILTERED(FULL).bim/bed/fam**
 	* --check specifies ONLY check fids and iids match across generated files
-	* --hold specifies not transfer required files to ./data/ folder
+	* --hold specifies not transfering required files to ./data/ folder
 ## Step 2: Preparing files for transfer, submitting jobs (epistasis_submit.py)
 1. scp **data/**, **scripts/**, **epistasis_submit.py** to submit server
 	* **data/** contains

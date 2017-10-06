@@ -136,7 +136,7 @@ def write_submission_file(params, flags):
 
 	request_cpus = 1
 	request_memory = %(use_memory)sGB
-	request_disk = 2GB
+	request_disk = %(use_disk)sGB
 
 	# if Condor puts job on hold, retry every 5 minutes, up to 4 times
 	periodic_release = ( JobRunCount < 5 ) && ( time() - EnteredCurrentStatus > 60*5 )
@@ -370,6 +370,9 @@ if __name__ == '__main__':
 	parser.add_argument('-m', '--memory', dest='memory',
 		help='amount of RAM (in GB) requested per job',
 		default=1, action='store', type=int)
+	parser.add_argument('--disk', dest='disk',
+						help='amount of disk space (in GB) requested per job',
+						default=2, action='store', type=int)
 	parser.add_argument('--maxthreads', dest='maxthreads',
 		help='maximum # of threads to use',
 		default=1, action='store', choices=range(1, 17), type=int)
@@ -409,6 +412,7 @@ if __name__ == '__main__':
 	list_data = args.list_dataset
 	covar = args.covar
 	memory = args.memory
+	disk = args.disk
 	pools = args.pools
 	numeric = args.numeric
 	species = args.species.lower()
@@ -486,6 +490,7 @@ if __name__ == '__main__':
 		'exclude':['', '--exclude'][exclude],
 		'condition': ['', '--condition %s' % condition][condition is not None],
 		'use_memory': memory,
+		'use_disk': disk,
 		'use_chtc': ['requirements = (Target.PoolName =!= "CHTC")', '']['chtc' in pools],
 		'use_osg': ['', '+wantGlidein = true']['osg' in pools],
 		'use_uw': ['', '+wantFlocking = true']['uw' in pools],

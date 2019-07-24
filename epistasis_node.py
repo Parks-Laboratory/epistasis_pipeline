@@ -23,9 +23,7 @@ root = os.path.split(os.path.realpath(sys.argv[0]))[0]
 species_chroms = {'human':24, 'mouse':21}
 # ignore Y chromosome
 species_chroms = {'human':23, 'mouse':20}
-p_value_threshold = 0.0005
 
-final_columns = ['SNP0','SNP1','PValue']
 
 # run fastlmmc
 def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, species='mouse', maxthreads=1, featsel=False, exclude=False, condition=None):
@@ -38,7 +36,8 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	# if condition:
 	#	 condition = '-SnpId1 %s' % condition[0]
 	# else:
-	#	 condition = '
+	#	 condition = ''
+
 
 	bfile = dataset
 	filtered_snp_reader = Bed('%s.FILTERED' % bfile)
@@ -57,14 +56,14 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 		exit(1)
 	if(group_size == 0):
 		print("grouping size is 0:\nprogram ended!")
-		exit(2)
+		exit(1)
 	groupNum = (n//group_size)
 	if (n % group_size !=0):
 		groupNum += 1
-	#print("group_num: " + str(groupNum))
+	#print(groupNum)
 	if(groupNum < 2):
 		print("group number should be at least two, please decrease the size of snps in each group")
-		exit(3)
+		exit(1)
 	th = groupNum - 1
 	rest = process_id + 1
 	base = 0
@@ -81,7 +80,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 	list_2_idx_start = 0
 	list_2_idx_end = 0
 	single_homo = False;
-	#print("hetero_num: %s, homo_num: %s, maxjobnum: %s" %(hetero_num, homo_num,maxjobnum))
+
 	if(process_id < hetero_num):
 		while(rest > th):
 			rest -= th
@@ -105,10 +104,9 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 		offset *= 2
 		list_1_idx_start = group_size * offset
 
-		if(offset == groupNum - 1):
+		if(offset > groupNum):
 			# last homo with only one group
-			#list_1_idx_start =
-			list_1_idx_end = n;
+			list_1_idx_end = n - 1;
 			single_homo = True
 
 		else:
@@ -122,7 +120,6 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 
 	# epistasis on all snps
 	df = None
-	df2 = None
 	if covFile:
 		if (process_id < hetero_num):
 			df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
@@ -131,7 +128,7 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 			else:
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
-				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, covar=covFile, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 	else:
 		if (process_id < hetero_num):
 			df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
@@ -140,20 +137,18 @@ def run_fastlmmc(dataset, output_dir, process_id, group_size, covFile=None, spec
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
 			else:
 				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end], sid_list_1=filtered_snp_reader.sid[list_1_idx_start:list_1_idx_end])
-				df2 = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
+				df = epistasis(filtered_snp_reader, pheno, G0=full_snp_reader, sid_list_0=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end], sid_list_1=filtered_snp_reader.sid[list_2_idx_start:list_2_idx_end])
 
-	def format_results(df, final_columns, threshold):
-		final = df.loc[:, final_columns]
-		final = final[final['PValue'] <= threshold]
-		return final
+	# format outputs
+	final = df.loc[:, ['SNP0', 'Chr0', 'ChrPos0', 'SNP1', 'Chr1', 'ChrPos1', 'PValue']]
+	final.columns = ['SNP1', 'CHR1', 'BP1', 'SNP2', 'CHR2', 'BP2', 'P']
+	# final = final[final['P'] <= 0.00001]
 
-	v.update(locals())
 	# output to csv
-	final = format_results(df, final_columns, p_value_threshold)
+	v.update(locals())
 	final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, sep='\t', index=False)
-	if(df2 is not None):
-		final = format_results(df2, final_columns, p_value_threshold)
-		final.to_csv('%(output_dir)s/%(dataset)s_%(process_id)s.gwas' % v, mode = 'a', sep='\t', index=False)
+
+
 
 if __name__ == '__main__':
 	from argparse import ArgumentParser
@@ -162,7 +157,7 @@ if __name__ == '__main__':
 	parser.add_argument('dataset', help='dataset to run', action='store')
 	parser.add_argument('group_size', type=int, help='number of snps in a group', action = 'store')
 	parser.add_argument('process_id', help= 'phenotype index', action='store')
-
+	
 	parser.add_argument('-s', '--species', dest='species', help='mouse or human',
 						default=None, action='store')
 	parser.add_argument('-c', '--covariate_file', dest='covFile', help='use covariate file',
